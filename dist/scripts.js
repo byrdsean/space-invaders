@@ -268,7 +268,9 @@ var BlasterBullet = /** @class */ (function () {
 }());
 var bulletArray = [];
 var canvas = getCanvas();
+// @ts-ignore
 var player = new Player(canvas);
+// @ts-ignore
 var keyboardControls = new KeyboardControls(player);
 var lastTimestamp = 0;
 function shouldRenderFrame(timestamp) {
