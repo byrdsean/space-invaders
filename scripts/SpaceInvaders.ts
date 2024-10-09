@@ -1,6 +1,8 @@
 const bulletArray: BlasterBullet[] = [];
 const canvas: Canvas = getCanvas();
+// @ts-ignore
 const player: Player = new Player(canvas);
+// @ts-ignore
 const keyboardControls = new KeyboardControls(player);
 let lastTimestamp = 0;
 

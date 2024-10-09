@@ -8,7 +8,7 @@
     "url": "https://github.com/byrdsean/space-invaders"
   },
   "scripts": {
-    "build": "tsc && copy .\\styles\\styles.css .\\public"
+    "build": "tsc && copy .\\styles\\styles.css .\\dist"
   },
   "author": "Sean Byrd",
   "license": "ISC",
