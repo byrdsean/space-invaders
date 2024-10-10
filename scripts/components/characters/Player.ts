@@ -1,54 +1,44 @@
-class Player {
-  private readonly HEIGHT = 25;
-  private readonly WIDTH = 25;
-  private readonly COLOR = "green";
-
-  private readonly canvas: Canvas;
-  private readonly movementService: MovementService;
-  private blaster: Blaster;
+// @ts-ignore
+class Player extends MoveableEntity {
+  public static HEIGHT = 25;
+  public static WIDTH = 25;
+  private static COLOR = "green";
 
   private isShooting: boolean = false;
 
-  constructor(canvas: Canvas) {
-    this.canvas = canvas;
-    this.movementService = new MovementService(
-      this.HEIGHT,
-      this.WIDTH,
-      this.canvas.height,
-      this.canvas.width,
-      this.getInitialVerticalPosition(),
-      this.getInitialHorizontalPosition()
+  private blaster: Blaster;
+
+  constructor() {
+    super(
+      Player.getInitialVerticalPosition(canvas.height),
+      Player.getInitialHorizontalPosition(canvas.width),
+      Player.HEIGHT,
+      Player.WIDTH
     );
-    this.blaster = new Blaster(canvas, this.movementService.verticalPosition);
+    this.blaster = new Blaster(this.movementService.verticalPosition);
   }
 
   reset() {
     this.isShooting = false;
-    this.movementService.verticalPosition = this.getInitialVerticalPosition();
+    this.movementService.verticalPosition = Player.getInitialVerticalPosition(
+      canvas.height
+    );
     this.movementService.horizontalPosition =
-      this.getInitialHorizontalPosition();
-    this.blaster = new Blaster(canvas, this.movementService.verticalPosition);
+      Player.getInitialHorizontalPosition(canvas.width);
+    this.blaster = new Blaster(this.movementService.verticalPosition);
   }
 
-  getInitialVerticalPosition(): number {
-    return this.canvas.height - this.HEIGHT;
-  }
-
-  getInitialHorizontalPosition(): number {
-    return Math.floor(this.canvas.width / 2 - this.WIDTH / 2);
-  }
-
-  draw() {
+  override draw() {
     this.updatePosition();
 
     const previousFillStyle = this.canvas.canvasContext.fillStyle;
 
-    this.canvas.canvasContext.fillStyle = this.COLOR;
+    this.canvas.canvasContext.fillStyle = Player.COLOR;
     this.canvas.canvasContext.fillRect(
       this.movementService.horizontalPosition,
       this.movementService.verticalPosition,
-      this.WIDTH,
-      this.HEIGHT
+      Player.WIDTH,
+      Player.HEIGHT
     );
 
     this.canvas.canvasContext.fillStyle = previousFillStyle;
@@ -75,7 +65,7 @@ class Player {
 
     const blasterHorizontalOffset =
       this.movementService.horizontalPosition +
-      Math.floor(this.WIDTH / 2) -
+      Math.floor(Player.WIDTH / 2) -
       this.blaster.getBlasterHorizontalOffset();
     return this.blaster.shoot(blasterHorizontalOffset);
   }
@@ -102,5 +92,13 @@ class Player {
     } else if (this.movementService.isMovingRight) {
       this.movementService.moveRight(1);
     }
+  }
+
+  private static getInitialVerticalPosition(maxHeight: number): number {
+    return maxHeight - this.HEIGHT;
+  }
+
+  private static getInitialHorizontalPosition(maxWidth: number): number {
+    return Math.floor(maxWidth / 2 - this.WIDTH / 2);
   }
 }

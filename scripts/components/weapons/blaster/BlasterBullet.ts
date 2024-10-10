@@ -1,32 +1,27 @@
-class BlasterBullet {
+// @ts-ignore
+class BlasterBullet extends MoveableEntity {
   public static HEIGHT = 5;
   public static WIDTH = 5;
   private readonly COLOR = "red";
 
-  private readonly canvas: Canvas;
-  private readonly movementService: MovementService;
   private readonly bulletSpeed: number;
 
   constructor(
-    canvas: Canvas,
     initialVerticalPosition: number,
     initialHorizontalPosition: number,
     bulletSpeed: number
   ) {
-    this.canvas = canvas;
-    this.bulletSpeed = bulletSpeed;
-    this.movementService = new MovementService(
-      BlasterBullet.HEIGHT,
-      BlasterBullet.WIDTH,
-      this.canvas.height,
-      this.canvas.width,
+    super(
       initialVerticalPosition,
-      initialHorizontalPosition
+      initialHorizontalPosition,
+      BlasterBullet.HEIGHT,
+      BlasterBullet.WIDTH
     );
+    this.bulletSpeed = bulletSpeed;
     this.movementService.startMovingUp();
   }
 
-  draw() {
+  override draw() {
     this.updatePosition();
 
     const previousFillStyle = this.canvas.canvasContext.fillStyle;

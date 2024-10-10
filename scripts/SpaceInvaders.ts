@@ -1,10 +1,14 @@
 const bulletArray: BlasterBullet[] = [];
-const canvas: Canvas = getCanvas();
+const enemies: Enemy[] = [];
 // @ts-ignore
-const player: Player = new Player(canvas);
+const canvas: Canvas = CanvasInstance.getInstance();
+// @ts-ignore
+const player: Player = new Player();
 // @ts-ignore
 const keyboardControls = new KeyboardControls(player);
 let lastTimestamp = 0;
+let maxEnemies = 5;
+const enemySpacing = 5;
 
 function shouldRenderFrame(timestamp: number): boolean {
   const deltaTimeMilliseconds: number = Math.floor(timestamp - lastTimestamp);
@@ -34,6 +38,17 @@ function renderBullets() {
   }
 }
 
+function renderEnemies() {
+  if (enemies.length === 0) {
+    const intRange = [...Array.from(new Array(maxEnemies)).keys()];
+    intRange.forEach((index) => {
+      const enemy = new Enemy(0, index * (Enemy.WIDTH + enemySpacing));
+      enemies.push(enemy);
+    });
+  }
+  enemies.forEach((enemy) => enemy.draw());
+}
+
 function renderFrame(timestamp: number) {
   if (!shouldRenderFrame(timestamp)) {
     return;
@@ -47,6 +62,7 @@ function renderFrame(timestamp: number) {
     bulletArray.push(nextShot);
   }
 
+  renderEnemies();
   renderBullets();
 }
 

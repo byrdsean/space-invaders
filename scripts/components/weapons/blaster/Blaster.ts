@@ -5,13 +5,11 @@ class Blaster {
   private readonly CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS = 25;
 
   private readonly verticalPosition: number;
-  private readonly canvas: Canvas;
 
   private timeLastShotFired: number = 0;
   private cooldownPeriod = this.MAXIMUM_COOLDOWN_PERIOD_MILLISECONDS;
 
-  constructor(canvas: Canvas, initialVerticalPosition: number) {
-    this.canvas = canvas;
+  constructor(initialVerticalPosition: number) {
     this.verticalPosition = initialVerticalPosition;
   }
 
@@ -25,7 +23,6 @@ class Blaster {
     this.timeLastShotFired = currentTime;
 
     return new BlasterBullet(
-      this.canvas,
       this.verticalPosition,
       initialHorizontalPosition,
       this.BULLET_SPEED
