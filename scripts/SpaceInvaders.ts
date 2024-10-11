@@ -1,15 +1,21 @@
 class SpaceInvaders {
-  private readonly ENEMY_SPACING = 5;
+  private readonly FPS = 60;
+
   private lastTimestamp = 0;
-  private maxEnemies = 5;
   private bulletArray: BlasterBullet[] = [];
-  private enemies: Enemy[] = [];
 
   private readonly canvas: Canvas;
   private readonly player: Player;
+  private readonly enemyGroup: EnemyGroup;
   private readonly keyboardControls: KeyboardControls;
+  private readonly renderMaximumMilliseconds: number;
+  private readonly renderMinimumMilliseconds: number;
 
   constructor() {
+    const millisecondsPerFrame = 1000 / this.FPS;
+    this.renderMaximumMilliseconds = Math.floor(millisecondsPerFrame) + 1;
+    this.renderMinimumMilliseconds = Math.floor(millisecondsPerFrame) - 1;
+
     this.canvas = CanvasInstance.getInstance();
 
     const playerVerticalPosition = Player.getInitialVerticalPosition(
@@ -19,6 +25,7 @@ class SpaceInvaders {
       this.canvas.height
     );
     this.player = new Player(playerVerticalPosition, playerHorizontalPosition);
+    this.enemyGroup = new EnemyGroup();
 
     this.keyboardControls = new KeyboardControls(this.player);
     this.keyboardControls.addKeyDownControls();
@@ -36,13 +43,12 @@ class SpaceInvaders {
     );
 
     this.player.draw();
+    this.enemyGroup.getEnemies().forEach((enemy) => enemy.draw());
 
     const nextShot: BlasterBullet | null = this.player.getNextShot();
     if (nextShot !== null) {
       this.bulletArray.push(nextShot);
     }
-
-    this.renderEnemies();
     this.renderBullets();
   }
 
@@ -52,8 +58,8 @@ class SpaceInvaders {
     );
     this.lastTimestamp = timestamp;
     return (
-      Constants.MILLISECONDS_RENDER_MINIMUM <= deltaTimeMilliseconds &&
-      deltaTimeMilliseconds <= Constants.MILLISECONDS_RENDER_MAXIMUM
+      this.renderMinimumMilliseconds <= deltaTimeMilliseconds &&
+      deltaTimeMilliseconds <= this.renderMaximumMilliseconds
     );
   }
 
@@ -68,17 +74,6 @@ class SpaceInvaders {
         this.bulletArray.splice(index, 1);
       }
     }
-  }
-
-  private renderEnemies() {
-    if (this.enemies.length === 0) {
-      const intRange = [...new Array(this.maxEnemies).keys()];
-      intRange.forEach((index) => {
-        const enemy = new Enemy(0, index * (Enemy.WIDTH + this.ENEMY_SPACING));
-        this.enemies.push(enemy);
-      });
-    }
-    this.enemies.forEach((enemy) => enemy.draw());
   }
 }
 

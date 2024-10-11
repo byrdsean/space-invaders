@@ -1,5 +1,6 @@
 class CanvasInstance {
   private static GAME_SCREEN_ID = "game_screen";
+  private static BORDER_WIDTH = 1;
   private static instance: Canvas | null;
 
   private constructor() {}
@@ -12,8 +13,10 @@ class CanvasInstance {
     )! as HTMLCanvasElement;
 
     const boundedContext: DOMRect = gameScreen.getBoundingClientRect();
-    const height = Math.floor(boundedContext.height) - Constants.BORDER_WIDTH;
-    const width = Math.floor(boundedContext.width) - Constants.BORDER_WIDTH;
+    const height =
+      Math.floor(boundedContext.height) - CanvasInstance.BORDER_WIDTH;
+    const width =
+      Math.floor(boundedContext.width) - CanvasInstance.BORDER_WIDTH;
 
     gameScreen.height = height;
     gameScreen.width = width;
