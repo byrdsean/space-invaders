@@ -23,8 +23,8 @@ class Enemy extends MoveableEntity {
 
     this.canvas.canvasContext.fillStyle = Enemy.COLOR;
     this.canvas.canvasContext.fillRect(
-      this.movementService.horizontalPosition,
-      this.movementService.verticalPosition,
+      this.horizontalPosition,
+      this.verticalPosition,
       Enemy.WIDTH,
       Enemy.HEIGHT
     );
@@ -33,10 +33,10 @@ class Enemy extends MoveableEntity {
   }
 
   private updatePosition() {
-    if (this.movementService.isMovingLeft) {
-      this.movementService.moveLeft(1);
-    } else if (this.movementService.isMovingRight) {
-      this.movementService.moveRight(1);
+    if (this.isMovingLeft) {
+      this.moveLeft(1);
+    } else if (this.isMovingRight) {
+      this.moveRight(1);
     }
   }
 }

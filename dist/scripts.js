@@ -2,25 +2,23 @@
 class CanvasInstance {
     constructor() { }
     static getInstance() {
-        if (!this.instance) {
-            this.instance = CanvasInstance.getCanvas();
-        }
-        return this.instance;
-    }
-    static getCanvas() {
-        const gameScreen = document.getElementById("game_screen");
+        if (this.instance)
+            return this.instance;
+        const gameScreen = document.getElementById(CanvasInstance.GAME_SCREEN_ID);
         const boundedContext = gameScreen.getBoundingClientRect();
         const height = Math.floor(boundedContext.height) - Constants.BORDER_WIDTH;
         const width = Math.floor(boundedContext.width) - Constants.BORDER_WIDTH;
         gameScreen.height = height;
         gameScreen.width = width;
-        return {
+        this.instance = {
             canvasContext: gameScreen.getContext("2d"),
             height: height,
             width: width,
         };
+        return this.instance;
     }
 }
+CanvasInstance.GAME_SCREEN_ID = "game_screen";
 var _a;
 class Constants {
 }
@@ -32,8 +30,59 @@ Constants.MILLISECONDS_RENDER_MINIMUM = Math.floor(_a.MILLISECONDS_PER_FRAME) - 
 Constants.MILLISECONDS_RENDER_MAXIMUM = Math.floor(_a.MILLISECONDS_PER_FRAME) + 1;
 class MoveableEntity {
     constructor(initialVerticalPosition, initialHorizontalPosition, height, width) {
+        this.isMovingLeft = false;
+        this.isMovingRight = false;
+        this.isMovingUp = false;
+        this.isMovingDown = false;
         this.canvas = CanvasInstance.getInstance();
-        this.movementService = new MovementService(height, width, this.canvas.height, this.canvas.width, initialVerticalPosition, initialHorizontalPosition);
+        this.HEIGHT = height;
+        this.WIDTH = width;
+        this.verticalPosition = initialVerticalPosition;
+        this.horizontalPosition = initialHorizontalPosition;
+    }
+    startMovingLeft() {
+        this.isMovingLeft = true;
+        this.isMovingRight = false;
+    }
+    stopMovingLeft() {
+        this.isMovingLeft = false;
+    }
+    startMovingRight() {
+        this.isMovingRight = true;
+        this.isMovingLeft = false;
+    }
+    stopMovingRight() {
+        this.isMovingRight = false;
+    }
+    startMovingUp() {
+        this.isMovingUp = true;
+        this.isMovingDown = false;
+    }
+    stopMovingUp() {
+        this.isMovingUp = false;
+    }
+    startMovingDown() {
+        this.isMovingDown = true;
+        this.isMovingUp = false;
+    }
+    stopMovingDown() {
+        this.isMovingDown = false;
+    }
+    moveLeft(unitsToMove) {
+        const newPosition = this.horizontalPosition - unitsToMove;
+        this.horizontalPosition = newPosition >= 0 ? newPosition : 0;
+    }
+    moveRight(unitsToMove) {
+        const newPosition = this.horizontalPosition + unitsToMove;
+        const maxRightPosition = this.canvas.width - this.WIDTH;
+        this.horizontalPosition =
+            newPosition <= maxRightPosition ? newPosition : maxRightPosition;
+    }
+    moveUp(unitsToMove) {
+        this.verticalPosition = this.verticalPosition - unitsToMove;
+    }
+    moveDown(unitsToMove) {
+        this.verticalPosition = this.verticalPosition + unitsToMove;
     }
 }
 // @ts-ignore
@@ -45,15 +94,15 @@ class Enemy extends MoveableEntity {
         this.updatePosition();
         const previousFillStyle = this.canvas.canvasContext.fillStyle;
         this.canvas.canvasContext.fillStyle = Enemy.COLOR;
-        this.canvas.canvasContext.fillRect(this.movementService.horizontalPosition, this.movementService.verticalPosition, Enemy.WIDTH, Enemy.HEIGHT);
+        this.canvas.canvasContext.fillRect(this.horizontalPosition, this.verticalPosition, Enemy.WIDTH, Enemy.HEIGHT);
         this.canvas.canvasContext.fillStyle = previousFillStyle;
     }
     updatePosition() {
-        if (this.movementService.isMovingLeft) {
-            this.movementService.moveLeft(1);
+        if (this.isMovingLeft) {
+            this.moveLeft(1);
         }
-        else if (this.movementService.isMovingRight) {
-            this.movementService.moveRight(1);
+        else if (this.isMovingRight) {
+            this.moveRight(1);
         }
     }
 }
@@ -65,41 +114,28 @@ class Player extends MoveableEntity {
     constructor() {
         super(Player.getInitialVerticalPosition(canvas.height), Player.getInitialHorizontalPosition(canvas.width), Player.HEIGHT, Player.WIDTH);
         this.isShooting = false;
-        this.blaster = new Blaster(this.movementService.verticalPosition);
+        this.blasterHorizontalPosition = 0;
+        this.blaster = new Blaster(this.verticalPosition);
+        this.updateBlasterHorizontalPosition();
     }
     reset() {
         this.isShooting = false;
-        this.movementService.verticalPosition = Player.getInitialVerticalPosition(canvas.height);
-        this.movementService.horizontalPosition =
-            Player.getInitialHorizontalPosition(canvas.width);
-        this.blaster = new Blaster(this.movementService.verticalPosition);
+        this.verticalPosition = Player.getInitialVerticalPosition(canvas.height);
+        this.horizontalPosition = Player.getInitialHorizontalPosition(canvas.width);
+        this.blaster = new Blaster(this.verticalPosition);
+        this.updateBlasterHorizontalPosition();
     }
     draw() {
         this.updatePosition();
         const previousFillStyle = this.canvas.canvasContext.fillStyle;
         this.canvas.canvasContext.fillStyle = Player.COLOR;
-        this.canvas.canvasContext.fillRect(this.movementService.horizontalPosition, this.movementService.verticalPosition, Player.WIDTH, Player.HEIGHT);
+        this.canvas.canvasContext.fillRect(this.horizontalPosition, this.verticalPosition, Player.WIDTH, Player.HEIGHT);
         this.canvas.canvasContext.fillStyle = previousFillStyle;
     }
-    startMovingLeft() {
-        this.movementService.startMovingLeft();
-    }
-    startMovingRight() {
-        this.movementService.startMovingRight();
-    }
-    stopMovingRight() {
-        this.movementService.stopMovingRight();
-    }
-    stopMovingLeft() {
-        this.movementService.stopMovingLeft();
-    }
     getNextShot() {
-        if (!this.isShooting)
-            return null;
-        const blasterHorizontalOffset = this.movementService.horizontalPosition +
-            Math.floor(Player.WIDTH / 2) -
-            this.blaster.getBlasterHorizontalOffset();
-        return this.blaster.shoot(blasterHorizontalOffset);
+        return this.isShooting
+            ? this.blaster.shoot(this.blasterHorizontalPosition)
+            : null;
     }
     startShooting() {
         this.isShooting = true;
@@ -114,11 +150,14 @@ class Player extends MoveableEntity {
         this.blaster.decreaseRateOfFire();
     }
     updatePosition() {
-        if (this.movementService.isMovingLeft) {
-            this.movementService.moveLeft(1);
+        if (this.isMovingLeft) {
+            this.moveLeft(1);
         }
-        else if (this.movementService.isMovingRight) {
-            this.movementService.moveRight(1);
+        else if (this.isMovingRight) {
+            this.moveRight(1);
+        }
+        if (this.isMovingLeft || this.isMovingRight) {
+            this.updateBlasterHorizontalPosition();
         }
     }
     static getInitialVerticalPosition(maxHeight) {
@@ -126,6 +165,12 @@ class Player extends MoveableEntity {
     }
     static getInitialHorizontalPosition(maxWidth) {
         return Math.floor(maxWidth / 2 - this.WIDTH / 2);
+    }
+    updateBlasterHorizontalPosition() {
+        this.blasterHorizontalPosition =
+            this.horizontalPosition +
+                Math.floor(Player.WIDTH / 2) -
+                this.blaster.getBlasterHorizontalOffset();
     }
 }
 Player.HEIGHT = 25;
@@ -174,72 +219,14 @@ class KeyboardControls {
         });
     }
 }
-class MovementService {
-    constructor(height, width, canvasHeight, canvasWidth, initialVerticalPosition, initialHorizontalPosition) {
-        this.isMovingLeft = false;
-        this.isMovingRight = false;
-        this.isMovingUp = false;
-        this.isMovingDown = false;
-        this.HEIGHT = height;
-        this.WIDTH = width;
-        this.CANVAS_HEIGHT = canvasHeight;
-        this.CANVAS_WIDTH = canvasWidth;
-        this.verticalPosition = initialVerticalPosition;
-        this.horizontalPosition = initialHorizontalPosition;
-    }
-    startMovingLeft() {
-        this.isMovingLeft = true;
-        this.isMovingRight = false;
-    }
-    stopMovingLeft() {
-        this.isMovingLeft = false;
-    }
-    startMovingRight() {
-        this.isMovingRight = true;
-        this.isMovingLeft = false;
-    }
-    stopMovingRight() {
-        this.isMovingRight = false;
-    }
-    startMovingUp() {
-        this.isMovingUp = true;
-        this.isMovingDown = false;
-    }
-    stopMovingUp() {
-        this.isMovingUp = false;
-    }
-    startMovingDown() {
-        this.isMovingDown = true;
-        this.isMovingUp = false;
-    }
-    stopMovingDown() {
-        this.isMovingDown = false;
-    }
-    moveLeft(unitsToMove) {
-        const newPosition = this.horizontalPosition - unitsToMove;
-        this.horizontalPosition = newPosition >= 0 ? newPosition : 0;
-    }
-    moveRight(unitsToMove) {
-        const newPosition = this.horizontalPosition + unitsToMove;
-        const maxRightPosition = this.CANVAS_WIDTH - this.WIDTH;
-        this.horizontalPosition =
-            newPosition <= maxRightPosition ? newPosition : maxRightPosition;
-    }
-    moveUp(unitsToMove) {
-        this.verticalPosition = this.verticalPosition - unitsToMove;
-    }
-    moveDown(unitsToMove) {
-        this.verticalPosition = this.verticalPosition + unitsToMove;
-    }
-}
 class Blaster {
     constructor(initialVerticalPosition) {
         this.BULLET_SPEED = 5;
-        this.MAXIMUM_COOLDOWN_PERIOD_MILLISECONDS = 500;
-        this.MINIMUM_COOLDOWN_PERIOD_MILLISECONDS = 100;
+        this.MAX_COOLDOWN_PERIOD_MILLISECONDS = 500;
+        this.MIN_COOLDOWN_PERIOD_MILLISECONDS = 100;
         this.CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS = 25;
         this.timeLastShotFired = 0;
-        this.cooldownPeriod = this.MAXIMUM_COOLDOWN_PERIOD_MILLISECONDS;
+        this.cooldownPeriod = this.MAX_COOLDOWN_PERIOD_MILLISECONDS;
         this.verticalPosition = initialVerticalPosition;
     }
     shoot(initialHorizontalPosition) {
@@ -253,15 +240,15 @@ class Blaster {
     increaseRateOfFire() {
         const newCoolDown = this.cooldownPeriod - this.CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS;
         this.cooldownPeriod =
-            newCoolDown < this.MINIMUM_COOLDOWN_PERIOD_MILLISECONDS
-                ? this.MINIMUM_COOLDOWN_PERIOD_MILLISECONDS
+            newCoolDown < this.MIN_COOLDOWN_PERIOD_MILLISECONDS
+                ? this.MIN_COOLDOWN_PERIOD_MILLISECONDS
                 : newCoolDown;
     }
     decreaseRateOfFire() {
         const newCoolDown = this.cooldownPeriod + this.CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS;
         this.cooldownPeriod =
-            newCoolDown > this.MAXIMUM_COOLDOWN_PERIOD_MILLISECONDS
-                ? this.MAXIMUM_COOLDOWN_PERIOD_MILLISECONDS
+            newCoolDown > this.MAX_COOLDOWN_PERIOD_MILLISECONDS
+                ? this.MAX_COOLDOWN_PERIOD_MILLISECONDS
                 : newCoolDown;
     }
     getBlasterHorizontalOffset() {
@@ -274,21 +261,21 @@ class BlasterBullet extends MoveableEntity {
         super(initialVerticalPosition, initialHorizontalPosition, BlasterBullet.HEIGHT, BlasterBullet.WIDTH);
         this.COLOR = "red";
         this.bulletSpeed = bulletSpeed;
-        this.movementService.startMovingUp();
+        this.startMovingUp();
     }
     draw() {
         this.updatePosition();
         const previousFillStyle = this.canvas.canvasContext.fillStyle;
         this.canvas.canvasContext.fillStyle = this.COLOR;
-        this.canvas.canvasContext.fillRect(this.movementService.horizontalPosition, this.movementService.verticalPosition, BlasterBullet.WIDTH, BlasterBullet.HEIGHT);
+        this.canvas.canvasContext.fillRect(this.horizontalPosition, this.verticalPosition, BlasterBullet.WIDTH, BlasterBullet.HEIGHT);
         this.canvas.canvasContext.fillStyle = previousFillStyle;
     }
     isBulletOffScreen() {
-        return this.movementService.verticalPosition <= -BlasterBullet.HEIGHT;
+        return this.verticalPosition <= -BlasterBullet.HEIGHT;
     }
     updatePosition() {
-        if (this.movementService.isMovingUp) {
-            this.movementService.moveUp(this.bulletSpeed);
+        if (this.isMovingUp) {
+            this.moveUp(this.bulletSpeed);
         }
     }
 }

@@ -18,7 +18,7 @@ class BlasterBullet extends MoveableEntity {
       BlasterBullet.WIDTH
     );
     this.bulletSpeed = bulletSpeed;
-    this.movementService.startMovingUp();
+    this.startMovingUp();
   }
 
   override draw() {
@@ -28,8 +28,8 @@ class BlasterBullet extends MoveableEntity {
 
     this.canvas.canvasContext.fillStyle = this.COLOR;
     this.canvas.canvasContext.fillRect(
-      this.movementService.horizontalPosition,
-      this.movementService.verticalPosition,
+      this.horizontalPosition,
+      this.verticalPosition,
       BlasterBullet.WIDTH,
       BlasterBullet.HEIGHT
     );
@@ -38,12 +38,12 @@ class BlasterBullet extends MoveableEntity {
   }
 
   isBulletOffScreen(): boolean {
-    return this.movementService.verticalPosition <= -BlasterBullet.HEIGHT;
+    return this.verticalPosition <= -BlasterBullet.HEIGHT;
   }
 
   private updatePosition() {
-    if (this.movementService.isMovingUp) {
-      this.movementService.moveUp(this.bulletSpeed);
+    if (this.isMovingUp) {
+      this.moveUp(this.bulletSpeed);
     }
   }
 }

@@ -1,13 +1,13 @@
 class Blaster {
   private readonly BULLET_SPEED = 5;
-  private readonly MAXIMUM_COOLDOWN_PERIOD_MILLISECONDS = 500;
-  private readonly MINIMUM_COOLDOWN_PERIOD_MILLISECONDS = 100;
+  private readonly MAX_COOLDOWN_PERIOD_MILLISECONDS = 500;
+  private readonly MIN_COOLDOWN_PERIOD_MILLISECONDS = 100;
   private readonly CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS = 25;
 
   private readonly verticalPosition: number;
 
   private timeLastShotFired: number = 0;
-  private cooldownPeriod = this.MAXIMUM_COOLDOWN_PERIOD_MILLISECONDS;
+  private cooldownPeriod = this.MAX_COOLDOWN_PERIOD_MILLISECONDS;
 
   constructor(initialVerticalPosition: number) {
     this.verticalPosition = initialVerticalPosition;
@@ -34,8 +34,8 @@ class Blaster {
       this.cooldownPeriod - this.CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS;
 
     this.cooldownPeriod =
-      newCoolDown < this.MINIMUM_COOLDOWN_PERIOD_MILLISECONDS
-        ? this.MINIMUM_COOLDOWN_PERIOD_MILLISECONDS
+      newCoolDown < this.MIN_COOLDOWN_PERIOD_MILLISECONDS
+        ? this.MIN_COOLDOWN_PERIOD_MILLISECONDS
         : newCoolDown;
   }
 
@@ -44,8 +44,8 @@ class Blaster {
       this.cooldownPeriod + this.CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS;
 
     this.cooldownPeriod =
-      newCoolDown > this.MAXIMUM_COOLDOWN_PERIOD_MILLISECONDS
-        ? this.MAXIMUM_COOLDOWN_PERIOD_MILLISECONDS
+      newCoolDown > this.MAX_COOLDOWN_PERIOD_MILLISECONDS
+        ? this.MAX_COOLDOWN_PERIOD_MILLISECONDS
         : newCoolDown;
   }
 
