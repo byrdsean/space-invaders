@@ -111,8 +111,8 @@ Enemy.WIDTH = 25;
 Enemy.COLOR = "purple";
 // @ts-ignore
 class Player extends MoveableEntity {
-    constructor() {
-        super(Player.getInitialVerticalPosition(canvas.height), Player.getInitialHorizontalPosition(canvas.width), Player.HEIGHT, Player.WIDTH);
+    constructor(initialVerticalPosition, initialHorizontalPosition) {
+        super(initialVerticalPosition, initialHorizontalPosition, Player.HEIGHT, Player.WIDTH);
         this.isShooting = false;
         this.blasterHorizontalPosition = 0;
         this.blaster = new Blaster(this.verticalPosition);
@@ -120,8 +120,8 @@ class Player extends MoveableEntity {
     }
     reset() {
         this.isShooting = false;
-        this.verticalPosition = Player.getInitialVerticalPosition(canvas.height);
-        this.horizontalPosition = Player.getInitialHorizontalPosition(canvas.width);
+        this.verticalPosition = Player.getInitialVerticalPosition(this.canvas.height);
+        this.horizontalPosition = Player.getInitialHorizontalPosition(this.canvas.height);
         this.blaster = new Blaster(this.verticalPosition);
         this.updateBlasterHorizontalPosition();
     }
@@ -149,6 +149,12 @@ class Player extends MoveableEntity {
     decreaseRateOfFire() {
         this.blaster.decreaseRateOfFire();
     }
+    static getInitialVerticalPosition(maxHeight) {
+        return maxHeight - this.HEIGHT;
+    }
+    static getInitialHorizontalPosition(maxWidth) {
+        return Math.floor(maxWidth / 2 - this.WIDTH / 2);
+    }
     updatePosition() {
         if (this.isMovingLeft) {
             this.moveLeft(1);
@@ -159,12 +165,6 @@ class Player extends MoveableEntity {
         if (this.isMovingLeft || this.isMovingRight) {
             this.updateBlasterHorizontalPosition();
         }
-    }
-    static getInitialVerticalPosition(maxHeight) {
-        return maxHeight - this.HEIGHT;
-    }
-    static getInitialHorizontalPosition(maxWidth) {
-        return Math.floor(maxWidth / 2 - this.WIDTH / 2);
     }
     updateBlasterHorizontalPosition() {
         this.blasterHorizontalPosition =
@@ -179,8 +179,6 @@ Player.COLOR = "green";
 class KeyboardControls {
     constructor(player) {
         this.player = player;
-        this.addKeyDownControls();
-        this.addKeyUpControls();
     }
     addKeyDownControls() {
         window.addEventListener("keydown", (e) => {
@@ -281,66 +279,66 @@ class BlasterBullet extends MoveableEntity {
 }
 BlasterBullet.HEIGHT = 5;
 BlasterBullet.WIDTH = 5;
-const bulletArray = [];
-const enemies = [];
-// @ts-ignore
-const canvas = CanvasInstance.getInstance();
-// @ts-ignore
-const player = new Player();
-// @ts-ignore
-const keyboardControls = new KeyboardControls(player);
-let lastTimestamp = 0;
-let maxEnemies = 5;
-const enemySpacing = 5;
-function shouldRenderFrame(timestamp) {
-    const deltaTimeMilliseconds = Math.floor(timestamp - lastTimestamp);
-    lastTimestamp = timestamp;
-    return (Constants.MILLISECONDS_RENDER_MINIMUM <= deltaTimeMilliseconds &&
-        deltaTimeMilliseconds <= Constants.MILLISECONDS_RENDER_MAXIMUM);
-}
-function initNewGame() {
-    player.reset();
-    player.draw();
-}
-function renderBullets() {
-    let index = 0;
-    while (index < bulletArray.length) {
-        const currentBullet = bulletArray[index];
-        if (!currentBullet.isBulletOffScreen()) {
-            currentBullet.draw();
-            index++;
+class SpaceInvaders {
+    constructor() {
+        this.ENEMY_SPACING = 5;
+        this.lastTimestamp = 0;
+        this.maxEnemies = 5;
+        this.bulletArray = [];
+        this.enemies = [];
+        this.canvas = CanvasInstance.getInstance();
+        const playerVerticalPosition = Player.getInitialVerticalPosition(this.canvas.height);
+        const playerHorizontalPosition = Player.getInitialHorizontalPosition(this.canvas.height);
+        this.player = new Player(playerVerticalPosition, playerHorizontalPosition);
+        this.keyboardControls = new KeyboardControls(this.player);
+        this.keyboardControls.addKeyDownControls();
+        this.keyboardControls.addKeyUpControls();
+    }
+    renderFrame(timestamp) {
+        if (!this.shouldRenderFrame(timestamp))
+            return;
+        this.canvas.canvasContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.player.draw();
+        const nextShot = this.player.getNextShot();
+        if (nextShot !== null) {
+            this.bulletArray.push(nextShot);
         }
-        else {
-            bulletArray.splice(index, 1);
+        this.renderEnemies();
+        this.renderBullets();
+    }
+    shouldRenderFrame(timestamp) {
+        const deltaTimeMilliseconds = Math.floor(timestamp - this.lastTimestamp);
+        this.lastTimestamp = timestamp;
+        return (Constants.MILLISECONDS_RENDER_MINIMUM <= deltaTimeMilliseconds &&
+            deltaTimeMilliseconds <= Constants.MILLISECONDS_RENDER_MAXIMUM);
+    }
+    renderBullets() {
+        let index = 0;
+        while (index < this.bulletArray.length) {
+            const currentBullet = this.bulletArray[index];
+            if (!currentBullet.isBulletOffScreen()) {
+                currentBullet.draw();
+                index++;
+            }
+            else {
+                this.bulletArray.splice(index, 1);
+            }
         }
     }
-}
-function renderEnemies() {
-    if (enemies.length === 0) {
-        const intRange = [...Array.from(new Array(maxEnemies)).keys()];
-        intRange.forEach((index) => {
-            const enemy = new Enemy(0, index * (Enemy.WIDTH + enemySpacing));
-            enemies.push(enemy);
-        });
+    renderEnemies() {
+        if (this.enemies.length === 0) {
+            const intRange = [...new Array(this.maxEnemies).keys()];
+            intRange.forEach((index) => {
+                const enemy = new Enemy(0, index * (Enemy.WIDTH + this.ENEMY_SPACING));
+                this.enemies.push(enemy);
+            });
+        }
+        this.enemies.forEach((enemy) => enemy.draw());
     }
-    enemies.forEach((enemy) => enemy.draw());
 }
-function renderFrame(timestamp) {
-    if (!shouldRenderFrame(timestamp)) {
-        return;
-    }
-    canvas.canvasContext.clearRect(0, 0, canvas.width, canvas.height);
-    player.draw();
-    const nextShot = player.getNextShot();
-    if (nextShot !== null) {
-        bulletArray.push(nextShot);
-    }
-    renderEnemies();
-    renderBullets();
-}
+const spaceInvaders = new SpaceInvaders();
 function animate(timestamp) {
-    renderFrame(timestamp);
+    spaceInvaders.renderFrame(timestamp);
     requestAnimationFrame(animate);
 }
-initNewGame();
-animate(0);
+this.animate(0);

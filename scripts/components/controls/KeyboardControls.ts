@@ -3,8 +3,6 @@ class KeyboardControls {
 
   constructor(player: Player) {
     this.player = player;
-    this.addKeyDownControls();
-    this.addKeyUpControls();
   }
 
   addKeyDownControls() {
