@@ -6,8 +6,8 @@ class CanvasInstance {
             return this.instance;
         const gameScreen = document.getElementById(CanvasInstance.GAME_SCREEN_ID);
         const boundedContext = gameScreen.getBoundingClientRect();
-        const height = Math.floor(boundedContext.height) - Constants.BORDER_WIDTH;
-        const width = Math.floor(boundedContext.width) - Constants.BORDER_WIDTH;
+        const height = Math.floor(boundedContext.height) - CanvasInstance.BORDER_WIDTH;
+        const width = Math.floor(boundedContext.width) - CanvasInstance.BORDER_WIDTH;
         gameScreen.height = height;
         gameScreen.width = width;
         this.instance = {
@@ -19,15 +19,13 @@ class CanvasInstance {
     }
 }
 CanvasInstance.GAME_SCREEN_ID = "game_screen";
-var _a;
-class Constants {
-}
-_a = Constants;
-Constants.BORDER_WIDTH = 1;
-Constants.FPS = 60;
-Constants.MILLISECONDS_PER_FRAME = 1000 / _a.FPS;
-Constants.MILLISECONDS_RENDER_MINIMUM = Math.floor(_a.MILLISECONDS_PER_FRAME) - 1;
-Constants.MILLISECONDS_RENDER_MAXIMUM = Math.floor(_a.MILLISECONDS_PER_FRAME) + 1;
+CanvasInstance.BORDER_WIDTH = 1;
+var EnemyType;
+(function (EnemyType) {
+    EnemyType[EnemyType["WEAK"] = 0] = "WEAK";
+    EnemyType[EnemyType["MEDIUM"] = 1] = "MEDIUM";
+    EnemyType[EnemyType["STRONG"] = 2] = "STRONG";
+})(EnemyType || (EnemyType = {}));
 class MoveableEntity {
     constructor(initialVerticalPosition, initialHorizontalPosition, height, width) {
         this.isMovingLeft = false;
@@ -85,30 +83,6 @@ class MoveableEntity {
         this.verticalPosition = this.verticalPosition + unitsToMove;
     }
 }
-// @ts-ignore
-class Enemy extends MoveableEntity {
-    constructor(initialVerticalPosition, initialHorizontalPosition) {
-        super(initialVerticalPosition, initialHorizontalPosition, Enemy.HEIGHT, Enemy.WIDTH);
-    }
-    draw() {
-        this.updatePosition();
-        const previousFillStyle = this.canvas.canvasContext.fillStyle;
-        this.canvas.canvasContext.fillStyle = Enemy.COLOR;
-        this.canvas.canvasContext.fillRect(this.horizontalPosition, this.verticalPosition, Enemy.WIDTH, Enemy.HEIGHT);
-        this.canvas.canvasContext.fillStyle = previousFillStyle;
-    }
-    updatePosition() {
-        if (this.isMovingLeft) {
-            this.moveLeft(1);
-        }
-        else if (this.isMovingRight) {
-            this.moveRight(1);
-        }
-    }
-}
-Enemy.HEIGHT = 25;
-Enemy.WIDTH = 25;
-Enemy.COLOR = "purple";
 // @ts-ignore
 class Player extends MoveableEntity {
     constructor(initialVerticalPosition, initialHorizontalPosition) {
@@ -176,6 +150,93 @@ class Player extends MoveableEntity {
 Player.HEIGHT = 25;
 Player.WIDTH = 25;
 Player.COLOR = "green";
+// @ts-ignore
+class Enemy extends MoveableEntity {
+    constructor(initialVerticalPosition, initialHorizontalPosition) {
+        super(initialVerticalPosition, initialHorizontalPosition, Enemy.HEIGHT, Enemy.WIDTH);
+    }
+    draw() {
+        this.updatePosition();
+        const previousFillStyle = this.canvas.canvasContext.fillStyle;
+        this.canvas.canvasContext.fillStyle = Enemy.COLOR;
+        this.canvas.canvasContext.fillRect(this.horizontalPosition, this.verticalPosition, Enemy.WIDTH, Enemy.HEIGHT);
+        this.canvas.canvasContext.fillStyle = previousFillStyle;
+    }
+    updatePosition() {
+        if (this.isMovingLeft) {
+            this.moveLeft(1);
+        }
+        else if (this.isMovingRight) {
+            this.moveRight(1);
+        }
+    }
+}
+Enemy.HEIGHT = 25;
+Enemy.WIDTH = 25;
+Enemy.COLOR = "purple";
+// @ts-nocheck
+class EnemyConstants {
+}
+EnemyConstants.levels = [
+    {
+        level: 1,
+        enemies: [
+            [
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+            ],
+            [
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+            ],
+            [
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+            ],
+        ],
+    },
+];
+class EnemyGroup {
+    constructor() {
+        this.ENEMY_SPACING = 5;
+        this.enemies = [];
+        this.currentLevel = 1;
+        this.canvas = CanvasInstance.getInstance();
+        this.addEnemies();
+    }
+    getEnemies() {
+        return [...this.enemies];
+    }
+    addEnemies() {
+        const levelData = EnemyConstants.levels.find((levelData) => levelData.level == this.currentLevel);
+        if (!levelData)
+            return;
+        levelData.enemies.forEach((row, rowIndex) => {
+            const verticalPosition = rowIndex * (Enemy.HEIGHT + this.ENEMY_SPACING);
+            const horizontalOffset = this.calculateRowOffset(row.length);
+            row.forEach((col, colIndex) => {
+                const horizontalPosition = colIndex * (Enemy.WIDTH + this.ENEMY_SPACING);
+                const enemy = new Enemy(verticalPosition, horizontalPosition + horizontalOffset);
+                this.enemies.push(enemy);
+            });
+        });
+    }
+    calculateRowOffset(rowLength) {
+        const maxWidthOfRow = rowLength * Enemy.WIDTH + (rowLength - 1) * this.ENEMY_SPACING;
+        return Math.floor(this.canvas.width / 2) - Math.floor(maxWidthOfRow / 2);
+    }
+}
 class KeyboardControls {
     constructor(player) {
         this.player = player;
@@ -281,15 +342,17 @@ BlasterBullet.HEIGHT = 5;
 BlasterBullet.WIDTH = 5;
 class SpaceInvaders {
     constructor() {
-        this.ENEMY_SPACING = 5;
+        this.FPS = 60;
         this.lastTimestamp = 0;
-        this.maxEnemies = 5;
         this.bulletArray = [];
-        this.enemies = [];
+        const millisecondsPerFrame = 1000 / this.FPS;
+        this.renderMaximumMilliseconds = Math.floor(millisecondsPerFrame) + 1;
+        this.renderMinimumMilliseconds = Math.floor(millisecondsPerFrame) - 1;
         this.canvas = CanvasInstance.getInstance();
         const playerVerticalPosition = Player.getInitialVerticalPosition(this.canvas.height);
         const playerHorizontalPosition = Player.getInitialHorizontalPosition(this.canvas.height);
         this.player = new Player(playerVerticalPosition, playerHorizontalPosition);
+        this.enemyGroup = new EnemyGroup();
         this.keyboardControls = new KeyboardControls(this.player);
         this.keyboardControls.addKeyDownControls();
         this.keyboardControls.addKeyUpControls();
@@ -299,18 +362,18 @@ class SpaceInvaders {
             return;
         this.canvas.canvasContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.player.draw();
+        this.enemyGroup.getEnemies().forEach((enemy) => enemy.draw());
         const nextShot = this.player.getNextShot();
         if (nextShot !== null) {
             this.bulletArray.push(nextShot);
         }
-        this.renderEnemies();
         this.renderBullets();
     }
     shouldRenderFrame(timestamp) {
         const deltaTimeMilliseconds = Math.floor(timestamp - this.lastTimestamp);
         this.lastTimestamp = timestamp;
-        return (Constants.MILLISECONDS_RENDER_MINIMUM <= deltaTimeMilliseconds &&
-            deltaTimeMilliseconds <= Constants.MILLISECONDS_RENDER_MAXIMUM);
+        return (this.renderMinimumMilliseconds <= deltaTimeMilliseconds &&
+            deltaTimeMilliseconds <= this.renderMaximumMilliseconds);
     }
     renderBullets() {
         let index = 0;
@@ -324,16 +387,6 @@ class SpaceInvaders {
                 this.bulletArray.splice(index, 1);
             }
         }
-    }
-    renderEnemies() {
-        if (this.enemies.length === 0) {
-            const intRange = [...new Array(this.maxEnemies).keys()];
-            intRange.forEach((index) => {
-                const enemy = new Enemy(0, index * (Enemy.WIDTH + this.ENEMY_SPACING));
-                this.enemies.push(enemy);
-            });
-        }
-        this.enemies.forEach((enemy) => enemy.draw());
     }
 }
 const spaceInvaders = new SpaceInvaders();

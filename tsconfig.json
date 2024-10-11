@@ -66,6 +66,7 @@
   "include": [
     "./scripts/models",
     "./scripts/helpers",
+    "./scripts/components/**/enums",
     "./scripts/components/moveable",
     "./scripts/components",
     "./scripts"
