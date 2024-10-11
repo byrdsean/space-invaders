@@ -4,9 +4,16 @@ class Enemy extends MoveableEntity {
   public static WIDTH = 25;
   private static COLOR = "purple";
 
+  private readonly minHorizontalBound: number;
+  private readonly maxHorizontalBound: number;
+
+  lastVerticalPosition: number = 0;
+
   constructor(
     initialVerticalPosition: number,
-    initialHorizontalPosition: number
+    initialHorizontalPosition: number,
+    minHorizontalBound: number,
+    maxHorizontalBound: number
   ) {
     super(
       initialVerticalPosition,
@@ -14,6 +21,9 @@ class Enemy extends MoveableEntity {
       Enemy.HEIGHT,
       Enemy.WIDTH
     );
+    this.minHorizontalBound = minHorizontalBound;
+    this.maxHorizontalBound = maxHorizontalBound;
+    this.lastVerticalPosition = initialVerticalPosition;
   }
 
   override draw() {
@@ -33,10 +43,42 @@ class Enemy extends MoveableEntity {
   }
 
   private updatePosition() {
-    if (this.isMovingLeft) {
+    this.checkLeftMovement();
+    this.checkRightMovement();
+    this.checkDownMovement();
+  }
+
+  private checkLeftMovement() {
+    if (!this.isMovingLeft) return;
+
+    if (this.minHorizontalBound <= this.horizontalPosition - 1) {
       this.moveLeft(1);
-    } else if (this.isMovingRight) {
+    } else {
+      this.startMovingRight();
+      this.startMovingDown();
+    }
+  }
+
+  private checkRightMovement() {
+    if (!this.isMovingRight) return;
+
+    const nextPosition = this.horizontalPosition + Enemy.WIDTH + 1;
+    if (nextPosition <= this.maxHorizontalBound) {
       this.moveRight(1);
+    } else {
+      this.startMovingLeft();
+      this.startMovingDown();
+    }
+  }
+
+  private checkDownMovement() {
+    if (!this.isMovingDown) return;
+
+    if (this.verticalPosition - this.lastVerticalPosition >= Enemy.HEIGHT) {
+      this.stopMovingDown();
+      this.lastVerticalPosition = this.verticalPosition;
+    } else {
+      this.moveDown(1);
     }
   }
 }

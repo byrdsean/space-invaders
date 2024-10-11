@@ -1,5 +1,6 @@
 class EnemyGroup {
   private readonly ENEMY_SPACING = 5;
+  private readonly BUFFER_FROM_CANVAS_BOUNDS = 10;
   private readonly canvas: Canvas;
 
   private enemies: Enemy[] = [];
@@ -31,8 +32,11 @@ class EnemyGroup {
 
         const enemy = new Enemy(
           verticalPosition,
-          horizontalPosition + horizontalOffset
+          horizontalPosition + horizontalOffset,
+          this.BUFFER_FROM_CANVAS_BOUNDS,
+          this.canvas.width - this.BUFFER_FROM_CANVAS_BOUNDS
         );
+        enemy.startMovingLeft();
 
         this.enemies.push(enemy);
       });

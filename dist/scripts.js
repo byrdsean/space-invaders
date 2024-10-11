@@ -152,8 +152,12 @@ Player.WIDTH = 25;
 Player.COLOR = "green";
 // @ts-ignore
 class Enemy extends MoveableEntity {
-    constructor(initialVerticalPosition, initialHorizontalPosition) {
+    constructor(initialVerticalPosition, initialHorizontalPosition, minHorizontalBound, maxHorizontalBound) {
         super(initialVerticalPosition, initialHorizontalPosition, Enemy.HEIGHT, Enemy.WIDTH);
+        this.lastVerticalPosition = 0;
+        this.minHorizontalBound = minHorizontalBound;
+        this.maxHorizontalBound = maxHorizontalBound;
+        this.lastVerticalPosition = initialVerticalPosition;
     }
     draw() {
         this.updatePosition();
@@ -163,11 +167,42 @@ class Enemy extends MoveableEntity {
         this.canvas.canvasContext.fillStyle = previousFillStyle;
     }
     updatePosition() {
-        if (this.isMovingLeft) {
+        this.checkLeftMovement();
+        this.checkRightMovement();
+        this.checkDownMovement();
+    }
+    checkLeftMovement() {
+        if (!this.isMovingLeft)
+            return;
+        if (this.minHorizontalBound <= this.horizontalPosition - 1) {
             this.moveLeft(1);
         }
-        else if (this.isMovingRight) {
+        else {
+            this.startMovingRight();
+            this.startMovingDown();
+        }
+    }
+    checkRightMovement() {
+        if (!this.isMovingRight)
+            return;
+        const nextPosition = this.horizontalPosition + Enemy.WIDTH + 1;
+        if (nextPosition <= this.maxHorizontalBound) {
             this.moveRight(1);
+        }
+        else {
+            this.startMovingLeft();
+            this.startMovingDown();
+        }
+    }
+    checkDownMovement() {
+        if (!this.isMovingDown)
+            return;
+        if (this.verticalPosition - this.lastVerticalPosition >= Enemy.HEIGHT) {
+            this.stopMovingDown();
+            this.lastVerticalPosition = this.verticalPosition;
+        }
+        else {
+            this.moveDown(1);
         }
     }
 }
@@ -210,6 +245,7 @@ EnemyConstants.levels = [
 class EnemyGroup {
     constructor() {
         this.ENEMY_SPACING = 5;
+        this.BUFFER_FROM_CANVAS_BOUNDS = 10;
         this.enemies = [];
         this.currentLevel = 1;
         this.canvas = CanvasInstance.getInstance();
@@ -227,7 +263,8 @@ class EnemyGroup {
             const horizontalOffset = this.calculateRowOffset(row.length);
             row.forEach((col, colIndex) => {
                 const horizontalPosition = colIndex * (Enemy.WIDTH + this.ENEMY_SPACING);
-                const enemy = new Enemy(verticalPosition, horizontalPosition + horizontalOffset);
+                const enemy = new Enemy(verticalPosition, horizontalPosition + horizontalOffset, this.BUFFER_FROM_CANVAS_BOUNDS, this.canvas.width - this.BUFFER_FROM_CANVAS_BOUNDS);
+                enemy.startMovingLeft();
                 this.enemies.push(enemy);
             });
         });
