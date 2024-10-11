@@ -9,10 +9,13 @@ class Player extends MoveableEntity {
   private blaster: Blaster;
   private blasterHorizontalPosition: number = 0;
 
-  constructor() {
+  constructor(
+    initialVerticalPosition: number,
+    initialHorizontalPosition: number
+  ) {
     super(
-      Player.getInitialVerticalPosition(canvas.height),
-      Player.getInitialHorizontalPosition(canvas.width),
+      initialVerticalPosition,
+      initialHorizontalPosition,
       Player.HEIGHT,
       Player.WIDTH
     );
@@ -22,8 +25,12 @@ class Player extends MoveableEntity {
 
   reset() {
     this.isShooting = false;
-    this.verticalPosition = Player.getInitialVerticalPosition(canvas.height);
-    this.horizontalPosition = Player.getInitialHorizontalPosition(canvas.width);
+    this.verticalPosition = Player.getInitialVerticalPosition(
+      this.canvas.height
+    );
+    this.horizontalPosition = Player.getInitialHorizontalPosition(
+      this.canvas.height
+    );
     this.blaster = new Blaster(this.verticalPosition);
     this.updateBlasterHorizontalPosition();
   }
@@ -66,6 +73,14 @@ class Player extends MoveableEntity {
     this.blaster.decreaseRateOfFire();
   }
 
+  static getInitialVerticalPosition(maxHeight: number): number {
+    return maxHeight - this.HEIGHT;
+  }
+
+  static getInitialHorizontalPosition(maxWidth: number): number {
+    return Math.floor(maxWidth / 2 - this.WIDTH / 2);
+  }
+
   private updatePosition() {
     if (this.isMovingLeft) {
       this.moveLeft(1);
@@ -76,14 +91,6 @@ class Player extends MoveableEntity {
     if (this.isMovingLeft || this.isMovingRight) {
       this.updateBlasterHorizontalPosition();
     }
-  }
-
-  private static getInitialVerticalPosition(maxHeight: number): number {
-    return maxHeight - this.HEIGHT;
-  }
-
-  private static getInitialHorizontalPosition(maxWidth: number): number {
-    return Math.floor(maxWidth / 2 - this.WIDTH / 2);
   }
 
   private updateBlasterHorizontalPosition() {

@@ -1,75 +1,92 @@
-const bulletArray: BlasterBullet[] = [];
-const enemies: Enemy[] = [];
-// @ts-ignore
-const canvas: Canvas = CanvasInstance.getInstance();
-// @ts-ignore
-const player: Player = new Player();
-// @ts-ignore
-const keyboardControls = new KeyboardControls(player);
-let lastTimestamp = 0;
-let maxEnemies = 5;
-const enemySpacing = 5;
+class SpaceInvaders {
+  private readonly ENEMY_SPACING = 5;
+  private lastTimestamp = 0;
+  private maxEnemies = 5;
+  private bulletArray: BlasterBullet[] = [];
+  private enemies: Enemy[] = [];
 
-function shouldRenderFrame(timestamp: number): boolean {
-  const deltaTimeMilliseconds: number = Math.floor(timestamp - lastTimestamp);
-  lastTimestamp = timestamp;
+  private readonly canvas: Canvas;
+  private readonly player: Player;
+  private readonly keyboardControls: KeyboardControls;
 
-  return (
-    Constants.MILLISECONDS_RENDER_MINIMUM <= deltaTimeMilliseconds &&
-    deltaTimeMilliseconds <= Constants.MILLISECONDS_RENDER_MAXIMUM
-  );
-}
+  constructor() {
+    this.canvas = CanvasInstance.getInstance();
 
-function initNewGame() {
-  player.reset();
-  player.draw();
-}
+    const playerVerticalPosition = Player.getInitialVerticalPosition(
+      this.canvas.height
+    );
+    const playerHorizontalPosition = Player.getInitialHorizontalPosition(
+      this.canvas.height
+    );
+    this.player = new Player(playerVerticalPosition, playerHorizontalPosition);
 
-function renderBullets() {
-  let index = 0;
-  while (index < bulletArray.length) {
-    const currentBullet = bulletArray[index];
-    if (!currentBullet.isBulletOffScreen()) {
-      currentBullet.draw();
-      index++;
-    } else {
-      bulletArray.splice(index, 1);
+    this.keyboardControls = new KeyboardControls(this.player);
+    this.keyboardControls.addKeyDownControls();
+    this.keyboardControls.addKeyUpControls();
+  }
+
+  renderFrame(timestamp: number) {
+    if (!this.shouldRenderFrame(timestamp)) return;
+
+    this.canvas.canvasContext.clearRect(
+      0,
+      0,
+      this.canvas.width,
+      this.canvas.height
+    );
+
+    this.player.draw();
+
+    const nextShot: BlasterBullet | null = this.player.getNextShot();
+    if (nextShot !== null) {
+      this.bulletArray.push(nextShot);
+    }
+
+    this.renderEnemies();
+    this.renderBullets();
+  }
+
+  private shouldRenderFrame(timestamp: number): boolean {
+    const deltaTimeMilliseconds: number = Math.floor(
+      timestamp - this.lastTimestamp
+    );
+    this.lastTimestamp = timestamp;
+    return (
+      Constants.MILLISECONDS_RENDER_MINIMUM <= deltaTimeMilliseconds &&
+      deltaTimeMilliseconds <= Constants.MILLISECONDS_RENDER_MAXIMUM
+    );
+  }
+
+  private renderBullets() {
+    let index = 0;
+    while (index < this.bulletArray.length) {
+      const currentBullet = this.bulletArray[index];
+      if (!currentBullet.isBulletOffScreen()) {
+        currentBullet.draw();
+        index++;
+      } else {
+        this.bulletArray.splice(index, 1);
+      }
     }
   }
+
+  private renderEnemies() {
+    if (this.enemies.length === 0) {
+      const intRange = [...new Array(this.maxEnemies).keys()];
+      intRange.forEach((index) => {
+        const enemy = new Enemy(0, index * (Enemy.WIDTH + this.ENEMY_SPACING));
+        this.enemies.push(enemy);
+      });
+    }
+    this.enemies.forEach((enemy) => enemy.draw());
+  }
 }
 
-function renderEnemies() {
-  if (enemies.length === 0) {
-    const intRange = [...Array.from(new Array(maxEnemies)).keys()];
-    intRange.forEach((index) => {
-      const enemy = new Enemy(0, index * (Enemy.WIDTH + enemySpacing));
-      enemies.push(enemy);
-    });
-  }
-  enemies.forEach((enemy) => enemy.draw());
-}
-
-function renderFrame(timestamp: number) {
-  if (!shouldRenderFrame(timestamp)) {
-    return;
-  }
-
-  canvas.canvasContext.clearRect(0, 0, canvas.width, canvas.height);
-  player.draw();
-
-  const nextShot: BlasterBullet | null = player.getNextShot();
-  if (nextShot !== null) {
-    bulletArray.push(nextShot);
-  }
-
-  renderEnemies();
-  renderBullets();
-}
+const spaceInvaders = new SpaceInvaders();
 
 function animate(timestamp: number) {
-  renderFrame(timestamp);
+  spaceInvaders.renderFrame(timestamp);
   requestAnimationFrame(animate);
 }
 
-initNewGame();
-animate(0);
+this.animate(0);
