@@ -9,7 +9,7 @@ class EnemyConstants {
           EnemyType.WEAK,
           EnemyType.WEAK,
           EnemyType.WEAK,
-          EnemyType.WEAK,
+          // EnemyType.WEAK,
         ],
         [
           EnemyType.WEAK,
