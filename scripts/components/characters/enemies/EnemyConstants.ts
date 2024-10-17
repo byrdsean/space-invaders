@@ -11,6 +11,7 @@ class EnemyConstants {
           EnemyType.WEAK,
           EnemyType.WEAK,
         ],
+        [EnemyType.WEAK, EnemyType.WEAK, EnemyType.WEAK],
         [
           EnemyType.WEAK,
           EnemyType.WEAK,
@@ -27,6 +28,7 @@ class EnemyConstants {
           EnemyType.WEAK,
           EnemyType.WEAK,
         ],
+        [EnemyType.WEAK, EnemyType.WEAK, EnemyType.WEAK],
       ],
     },
   ];

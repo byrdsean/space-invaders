@@ -21,22 +21,68 @@ class EnemyGroup {
 
     if (!levelData) return;
 
+    const maxEnemiesInARow = levelData.enemies
+      .map((enemyList) => enemyList.length)
+      .reduce((acc, length) => Math.max(acc, length), 0);
+
     levelData.enemies.forEach((row, rowIndex) => {
       const verticalPosition = rowIndex * (Enemy.HEIGHT + this.ENEMY_SPACING);
       const horizontalOffset = this.calculateRowOffset(row.length);
 
-      row.forEach((col, colIndex) => {
+      row.forEach((_, colIndex) => {
         const horizontalPosition =
           colIndex * (Enemy.WIDTH + this.ENEMY_SPACING);
 
+        const minLeftPositionToMove = this.calculateMinLeftPositionToMove(
+          maxEnemiesInARow,
+          row.length,
+          colIndex
+        );
+        const maxRightPositionToMove = this.calculateMaxRightPositionToMove(
+          maxEnemiesInARow,
+          row.length,
+          colIndex
+        );
+
         const enemy = new Enemy(
           verticalPosition,
-          horizontalPosition + horizontalOffset
+          horizontalPosition + horizontalOffset,
+          minLeftPositionToMove,
+          maxRightPositionToMove
         );
+        enemy.startMovingLeft();
 
         this.enemies.push(enemy);
       });
     });
+  }
+
+  private calculateMaxRightPositionToMove(
+    maxEnemiesInARow: number,
+    rowLength: number,
+    enemyIndex: number
+  ): number {
+    const spacesToRight =
+      (maxEnemiesInARow - rowLength) / 2 + (rowLength - enemyIndex - 1);
+    const maxRightPositionToMove =
+      spacesToRight * Enemy.WIDTH +
+      Math.floor(spacesToRight) * this.ENEMY_SPACING +
+      this.ENEMY_SPACING;
+    return Math.floor(this.canvas.width - maxRightPositionToMove);
+  }
+
+  private calculateMinLeftPositionToMove(
+    maxEnemiesInARow: number,
+    rowLength: number,
+    enemyIndex: number
+  ): number {
+    const spacesToLeft = (maxEnemiesInARow - rowLength) / 2 + enemyIndex;
+    return (
+      Math.floor(
+        spacesToLeft * Enemy.WIDTH +
+          Math.floor(spacesToLeft) * this.ENEMY_SPACING
+      ) + this.ENEMY_SPACING
+    );
   }
 
   private calculateRowOffset(rowLength: number) {

@@ -61,14 +61,20 @@ abstract class MoveableEntity {
     this.isMovingDown = false;
   }
 
-  protected moveLeft(unitsToMove: number) {
+  protected moveLeft(unitsToMove: number, minHorizontalPosition: number = 0) {
     const newPosition: number = this.horizontalPosition - unitsToMove;
-    this.horizontalPosition = newPosition >= 0 ? newPosition : 0;
+    this.horizontalPosition =
+      newPosition >= minHorizontalPosition
+        ? newPosition
+        : minHorizontalPosition;
   }
 
-  protected moveRight(unitsToMove: number) {
+  protected moveRight(
+    unitsToMove: number,
+    maxWidth: number = this.canvas.width
+  ) {
     const newPosition: number = this.horizontalPosition + unitsToMove;
-    const maxRightPosition = this.canvas.width - this.WIDTH;
+    const maxRightPosition = maxWidth - this.WIDTH;
     this.horizontalPosition =
       newPosition <= maxRightPosition ? newPosition : maxRightPosition;
   }
