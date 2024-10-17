@@ -66,13 +66,16 @@ class MoveableEntity {
     stopMovingDown() {
         this.isMovingDown = false;
     }
-    moveLeft(unitsToMove) {
+    moveLeft(unitsToMove, minHorizontalPosition = 0) {
         const newPosition = this.horizontalPosition - unitsToMove;
-        this.horizontalPosition = newPosition >= 0 ? newPosition : 0;
+        this.horizontalPosition =
+            newPosition >= minHorizontalPosition
+                ? newPosition
+                : minHorizontalPosition;
     }
-    moveRight(unitsToMove) {
+    moveRight(unitsToMove, maxWidth = this.canvas.width) {
         const newPosition = this.horizontalPosition + unitsToMove;
-        const maxRightPosition = this.canvas.width - this.WIDTH;
+        const maxRightPosition = maxWidth - this.WIDTH;
         this.horizontalPosition =
             newPosition <= maxRightPosition ? newPosition : maxRightPosition;
     }
@@ -152,8 +155,15 @@ Player.WIDTH = 25;
 Player.COLOR = "green";
 // @ts-ignore
 class Enemy extends MoveableEntity {
-    constructor(initialVerticalPosition, initialHorizontalPosition) {
+    constructor(initialVerticalPosition, initialHorizontalPosition, maxLeftPosition, maxRightPosition) {
         super(initialVerticalPosition, initialHorizontalPosition, Enemy.HEIGHT, Enemy.WIDTH);
+        this.maxLeftPosition = 0;
+        this.maxRightPosition = 0;
+        this.nextVerticalPositonToMoveDown = 0;
+        this.movementSpeed = 1;
+        this.maxLeftPosition = maxLeftPosition;
+        this.maxRightPosition = maxRightPosition;
+        this.nextVerticalPositonToMoveDown = initialVerticalPosition;
     }
     draw() {
         this.updatePosition();
@@ -163,12 +173,52 @@ class Enemy extends MoveableEntity {
         this.canvas.canvasContext.fillStyle = previousFillStyle;
     }
     updatePosition() {
-        if (this.isMovingLeft) {
-            this.moveLeft(1);
+        this.updateMoveLeft();
+        this.updateMoveRight();
+        this.updateMoveDown();
+    }
+    updateMoveLeft() {
+        if (!this.isMovingLeft)
+            return;
+        if (this.horizontalPosition <= this.maxLeftPosition) {
+            this.stopMovingLeft();
+            this.setNextVerticalPositionToMoveDown();
+            this.startMovingDown();
         }
-        else if (this.isMovingRight) {
-            this.moveRight(1);
+        else {
+            this.moveLeft(this.movementSpeed, this.maxLeftPosition);
         }
+    }
+    updateMoveRight() {
+        if (!this.isMovingRight)
+            return;
+        if (this.horizontalPosition + Enemy.WIDTH >= this.maxRightPosition) {
+            this.stopMovingRight();
+            this.setNextVerticalPositionToMoveDown();
+            this.startMovingDown();
+        }
+        else {
+            this.moveRight(this.movementSpeed, this.maxRightPosition);
+        }
+    }
+    updateMoveDown() {
+        if (!this.isMovingDown)
+            return;
+        if (this.verticalPosition >= this.nextVerticalPositonToMoveDown) {
+            this.stopMovingDown();
+            if (this.horizontalPosition <= this.maxLeftPosition) {
+                this.startMovingRight();
+            }
+            if (this.horizontalPosition + Enemy.WIDTH >= this.maxRightPosition) {
+                this.startMovingLeft();
+            }
+        }
+        else {
+            this.moveDown(this.movementSpeed);
+        }
+    }
+    setNextVerticalPositionToMoveDown() {
+        this.nextVerticalPositonToMoveDown += Enemy.HEIGHT;
     }
 }
 Enemy.HEIGHT = 25;
@@ -188,6 +238,7 @@ EnemyConstants.levels = [
                 EnemyType.WEAK,
                 EnemyType.WEAK,
             ],
+            [EnemyType.WEAK, EnemyType.WEAK, EnemyType.WEAK],
             [
                 EnemyType.WEAK,
                 EnemyType.WEAK,
@@ -204,6 +255,7 @@ EnemyConstants.levels = [
                 EnemyType.WEAK,
                 EnemyType.WEAK,
             ],
+            [EnemyType.WEAK, EnemyType.WEAK, EnemyType.WEAK],
         ],
     },
 ];
@@ -222,15 +274,33 @@ class EnemyGroup {
         const levelData = EnemyConstants.levels.find((levelData) => levelData.level == this.currentLevel);
         if (!levelData)
             return;
+        const maxEnemiesInARow = levelData.enemies
+            .map((enemyList) => enemyList.length)
+            .reduce((acc, length) => Math.max(acc, length), 0);
         levelData.enemies.forEach((row, rowIndex) => {
             const verticalPosition = rowIndex * (Enemy.HEIGHT + this.ENEMY_SPACING);
             const horizontalOffset = this.calculateRowOffset(row.length);
-            row.forEach((col, colIndex) => {
+            row.forEach((_, colIndex) => {
                 const horizontalPosition = colIndex * (Enemy.WIDTH + this.ENEMY_SPACING);
-                const enemy = new Enemy(verticalPosition, horizontalPosition + horizontalOffset);
+                const minLeftPositionToMove = this.calculateMinLeftPositionToMove(maxEnemiesInARow, row.length, colIndex);
+                const maxRightPositionToMove = this.calculateMaxRightPositionToMove(maxEnemiesInARow, row.length, colIndex);
+                const enemy = new Enemy(verticalPosition, horizontalPosition + horizontalOffset, minLeftPositionToMove, maxRightPositionToMove);
+                enemy.startMovingLeft();
                 this.enemies.push(enemy);
             });
         });
+    }
+    calculateMaxRightPositionToMove(maxEnemiesInARow, rowLength, enemyIndex) {
+        const spacesToRight = (maxEnemiesInARow - rowLength) / 2 + (rowLength - enemyIndex - 1);
+        const maxRightPositionToMove = spacesToRight * Enemy.WIDTH +
+            Math.floor(spacesToRight) * this.ENEMY_SPACING +
+            this.ENEMY_SPACING;
+        return Math.floor(this.canvas.width - maxRightPositionToMove);
+    }
+    calculateMinLeftPositionToMove(maxEnemiesInARow, rowLength, enemyIndex) {
+        const spacesToLeft = (maxEnemiesInARow - rowLength) / 2 + enemyIndex;
+        return (Math.floor(spacesToLeft * Enemy.WIDTH +
+            Math.floor(spacesToLeft) * this.ENEMY_SPACING) + this.ENEMY_SPACING);
     }
     calculateRowOffset(rowLength) {
         const maxWidthOfRow = rowLength * Enemy.WIDTH + (rowLength - 1) * this.ENEMY_SPACING;
@@ -361,8 +431,8 @@ class SpaceInvaders {
         if (!this.shouldRenderFrame(timestamp))
             return;
         this.canvas.canvasContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        this.player.draw();
         this.enemyGroup.getEnemies().forEach((enemy) => enemy.draw());
+        this.player.draw();
         const nextShot = this.player.getNextShot();
         if (nextShot !== null) {
             this.bulletArray.push(nextShot);

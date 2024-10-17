@@ -42,8 +42,8 @@ class SpaceInvaders {
       this.canvas.height
     );
 
-    this.player.draw();
     this.enemyGroup.getEnemies().forEach((enemy) => enemy.draw());
+    this.player.draw();
 
     const nextShot: BlasterBullet | null = this.player.getNextShot();
     if (nextShot !== null) {
