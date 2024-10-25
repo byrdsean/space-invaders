@@ -232,7 +232,7 @@ EnemyConstants.levels = [
         level: 1,
         enemies: [
             [
-                EnemyType.WEAK,
+                // EnemyType.WEAK,
                 EnemyType.WEAK,
                 EnemyType.WEAK,
                 EnemyType.WEAK,
@@ -293,14 +293,15 @@ class EnemyGroup {
     calculateMaxRightPositionToMove(maxEnemiesInARow, rowLength, enemyIndex) {
         const spacesToRight = (maxEnemiesInARow - rowLength) / 2 + (rowLength - enemyIndex - 1);
         const maxRightPositionToMove = spacesToRight * Enemy.WIDTH +
-            Math.floor(spacesToRight) * this.ENEMY_SPACING +
+            spacesToRight * this.ENEMY_SPACING +
             this.ENEMY_SPACING;
-        return Math.floor(this.canvas.width - maxRightPositionToMove);
+        return this.canvas.width - maxRightPositionToMove;
     }
     calculateMinLeftPositionToMove(maxEnemiesInARow, rowLength, enemyIndex) {
         const spacesToLeft = (maxEnemiesInARow - rowLength) / 2 + enemyIndex;
-        return (Math.floor(spacesToLeft * Enemy.WIDTH +
-            Math.floor(spacesToLeft) * this.ENEMY_SPACING) + this.ENEMY_SPACING);
+        return (spacesToLeft * Enemy.WIDTH +
+            spacesToLeft * this.ENEMY_SPACING +
+            this.ENEMY_SPACING);
     }
     calculateRowOffset(rowLength) {
         const maxWidthOfRow = rowLength * Enemy.WIDTH + (rowLength - 1) * this.ENEMY_SPACING;

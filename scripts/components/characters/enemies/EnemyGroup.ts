@@ -66,9 +66,9 @@ class EnemyGroup {
       (maxEnemiesInARow - rowLength) / 2 + (rowLength - enemyIndex - 1);
     const maxRightPositionToMove =
       spacesToRight * Enemy.WIDTH +
-      Math.floor(spacesToRight) * this.ENEMY_SPACING +
+      spacesToRight * this.ENEMY_SPACING +
       this.ENEMY_SPACING;
-    return Math.floor(this.canvas.width - maxRightPositionToMove);
+    return this.canvas.width - maxRightPositionToMove;
   }
 
   private calculateMinLeftPositionToMove(
@@ -78,10 +78,9 @@ class EnemyGroup {
   ): number {
     const spacesToLeft = (maxEnemiesInARow - rowLength) / 2 + enemyIndex;
     return (
-      Math.floor(
-        spacesToLeft * Enemy.WIDTH +
-          Math.floor(spacesToLeft) * this.ENEMY_SPACING
-      ) + this.ENEMY_SPACING
+      spacesToLeft * Enemy.WIDTH +
+      spacesToLeft * this.ENEMY_SPACING +
+      this.ENEMY_SPACING
     );
   }
 
