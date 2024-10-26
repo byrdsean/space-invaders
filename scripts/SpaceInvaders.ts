@@ -4,6 +4,7 @@ class SpaceInvaders {
   private lastTimestamp = 0;
   private score = 0;
   private bulletArray: BlasterBullet[] = [];
+  private enemyBulletArray: BlasterBullet[] = [];
 
   private readonly canvas: Canvas;
   private readonly player: Player;
@@ -50,16 +51,26 @@ class SpaceInvaders {
 
     this.removeCollidedBulletsAndEnemies();
 
-    this.enemyGroup.getEnemies().forEach((enemy) => enemy.draw());
+    this.enemyGroup.getEnemies().forEach((enemy) => {
+      enemy.draw();
+      this.addNextShot(enemy.getNextShot(), this.enemyBulletArray);
+    });
+
     this.player.draw();
+    this.addNextShot(this.player.getNextShot(), this.bulletArray);
 
-    const nextShot: BlasterBullet | null = this.player.getNextShot();
-    if (nextShot !== null) {
-      this.bulletArray.push(nextShot);
-    }
-    this.renderBullets();
+    this.renderBullets(this.enemyBulletArray);
+    this.renderBullets(this.bulletArray);
 
-    this.headsUpDisplay.draw(this.score, 95);
+    this.headsUpDisplay.draw(this.score, 100);
+  }
+
+  private addNextShot(
+    nextShot: BlasterBullet | null,
+    bullets: BlasterBullet[]
+  ) {
+    if (!nextShot) return;
+    bullets.push(nextShot);
   }
 
   private shouldRenderFrame(timestamp: number): boolean {
@@ -73,15 +84,15 @@ class SpaceInvaders {
     );
   }
 
-  private renderBullets() {
+  private renderBullets(bullets: BlasterBullet[]) {
     let index = 0;
-    while (index < this.bulletArray.length) {
-      const currentBullet = this.bulletArray[index];
+    while (index < bullets.length) {
+      const currentBullet = bullets[index];
       if (!currentBullet.isBulletOffScreen()) {
         currentBullet.draw();
         index++;
       } else {
-        this.bulletArray.splice(index, 1);
+        bullets.splice(index, 1);
       }
     }
   }

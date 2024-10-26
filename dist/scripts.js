@@ -91,16 +91,13 @@ class Player extends MoveableEntity {
     constructor(initialVerticalPosition, initialHorizontalPosition) {
         super(initialVerticalPosition, initialHorizontalPosition, Player.HEIGHT, Player.WIDTH);
         this.isShooting = false;
-        this.blasterHorizontalPosition = 0;
-        this.blaster = new Blaster(this.verticalPosition);
-        this.updateBlasterHorizontalPosition();
+        this.blaster = new Blaster(this.verticalPosition, this.horizontalPosition, Player.WIDTH);
     }
     reset() {
         this.isShooting = false;
         this.verticalPosition = Player.getInitialVerticalPosition(this.canvas.height);
         this.horizontalPosition = Player.getInitialHorizontalPosition(this.canvas.height);
-        this.blaster = new Blaster(this.verticalPosition);
-        this.updateBlasterHorizontalPosition();
+        this.blaster = new Blaster(this.verticalPosition, this.horizontalPosition, Player.WIDTH);
     }
     draw() {
         this.updatePosition();
@@ -110,9 +107,7 @@ class Player extends MoveableEntity {
         this.canvas.canvasContext.fillStyle = previousFillStyle;
     }
     getNextShot() {
-        return this.isShooting
-            ? this.blaster.shoot(this.blasterHorizontalPosition)
-            : null;
+        return this.isShooting ? this.blaster.shoot() : null;
     }
     startShooting() {
         this.isShooting = true;
@@ -140,14 +135,8 @@ class Player extends MoveableEntity {
             this.moveRight(1);
         }
         if (this.isMovingLeft || this.isMovingRight) {
-            this.updateBlasterHorizontalPosition();
+            this.blaster.updateBlasterHorizontalPosition(this.horizontalPosition);
         }
-    }
-    updateBlasterHorizontalPosition() {
-        this.blasterHorizontalPosition =
-            this.horizontalPosition +
-                Math.floor(Player.WIDTH / 2) -
-                this.blaster.getBlasterHorizontalOffset();
     }
 }
 Player.HEIGHT = 25;
@@ -164,6 +153,8 @@ class Enemy extends MoveableEntity {
         this.maxLeftPosition = maxLeftPosition;
         this.maxRightPosition = maxRightPosition;
         this.nextVerticalPositonToMoveDown = initialVerticalPosition;
+        this.blaster = new Blaster(this.verticalPosition + Enemy.HEIGHT, initialHorizontalPosition, Enemy.WIDTH);
+        this.blaster.shootDownwards();
     }
     draw() {
         this.updatePosition();
@@ -171,6 +162,9 @@ class Enemy extends MoveableEntity {
         this.canvas.canvasContext.fillStyle = Enemy.COLOR;
         this.canvas.canvasContext.fillRect(this.horizontalPosition, this.verticalPosition, Enemy.WIDTH, Enemy.HEIGHT);
         this.canvas.canvasContext.fillStyle = previousFillStyle;
+    }
+    getNextShot() {
+        return this.blaster.shoot();
     }
     updatePosition() {
         this.updateMoveLeft();
@@ -187,6 +181,7 @@ class Enemy extends MoveableEntity {
         }
         else {
             this.moveLeft(this.movementSpeed, this.maxLeftPosition);
+            this.blaster.updateBlasterHorizontalPosition(this.horizontalPosition);
         }
     }
     updateMoveRight() {
@@ -199,22 +194,23 @@ class Enemy extends MoveableEntity {
         }
         else {
             this.moveRight(this.movementSpeed, this.maxRightPosition);
+            this.blaster.updateBlasterHorizontalPosition(this.horizontalPosition);
         }
     }
     updateMoveDown() {
         if (!this.isMovingDown)
             return;
-        if (this.verticalPosition >= this.nextVerticalPositonToMoveDown) {
-            this.stopMovingDown();
-            if (this.horizontalPosition <= this.maxLeftPosition) {
-                this.startMovingRight();
-            }
-            if (this.horizontalPosition + Enemy.WIDTH >= this.maxRightPosition) {
-                this.startMovingLeft();
-            }
-        }
-        else {
+        if (this.verticalPosition < this.nextVerticalPositonToMoveDown) {
             this.moveDown(this.movementSpeed);
+            this.blaster.updateBlasterVerticalPosition(this.verticalPosition + Enemy.HEIGHT);
+            return;
+        }
+        this.stopMovingDown();
+        if (this.horizontalPosition <= this.maxLeftPosition) {
+            this.startMovingRight();
+        }
+        if (this.horizontalPosition + Enemy.WIDTH >= this.maxRightPosition) {
+            this.startMovingLeft();
         }
     }
     setNextVerticalPositionToMoveDown() {
@@ -470,22 +466,33 @@ class HeadsUpDisplayService {
     }
 }
 class Blaster {
-    constructor(initialVerticalPosition) {
-        this.BULLET_SPEED = 5;
+    constructor(initialVerticalPosition, ownerHorizontalPosition, ownerWidth) {
+        this.BULLET_SPEED = 2;
         this.MAX_COOLDOWN_PERIOD_MILLISECONDS = 500;
         this.MIN_COOLDOWN_PERIOD_MILLISECONDS = 100;
         this.CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS = 25;
         this.timeLastShotFired = 0;
         this.cooldownPeriod = this.MAX_COOLDOWN_PERIOD_MILLISECONDS;
+        this.isShootingDown = false;
+        this.ownerWidth = ownerWidth;
         this.verticalPosition = initialVerticalPosition;
+        this.horizontalPosition = 0;
+        this.updateBlasterHorizontalPosition(ownerHorizontalPosition);
     }
-    shoot(initialHorizontalPosition) {
+    shoot() {
         const currentTime = Date.now();
         const shouldFire = currentTime - this.timeLastShotFired >= this.cooldownPeriod;
         if (!shouldFire)
             return null;
         this.timeLastShotFired = currentTime;
-        return new BlasterBullet(this.verticalPosition, initialHorizontalPosition, this.BULLET_SPEED);
+        const bullet = new BlasterBullet(this.verticalPosition, this.horizontalPosition, this.BULLET_SPEED);
+        if (this.isShootingDown) {
+            bullet.startMovingDown();
+        }
+        else {
+            bullet.startMovingUp();
+        }
+        return bullet;
     }
     increaseRateOfFire() {
         const newCoolDown = this.cooldownPeriod - this.CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS;
@@ -501,8 +508,18 @@ class Blaster {
                 ? this.MAX_COOLDOWN_PERIOD_MILLISECONDS
                 : newCoolDown;
     }
-    getBlasterHorizontalOffset() {
-        return Math.floor(BlasterBullet.WIDTH / 2);
+    updateBlasterHorizontalPosition(ownerHorizontalPosition) {
+        const blasterHorizontalOffset = Math.floor(BlasterBullet.WIDTH / 2);
+        this.horizontalPosition =
+            ownerHorizontalPosition +
+                Math.floor(this.ownerWidth / 2) -
+                blasterHorizontalOffset;
+    }
+    updateBlasterVerticalPosition(ownerVerticalPosition) {
+        this.verticalPosition = ownerVerticalPosition;
+    }
+    shootDownwards() {
+        this.isShootingDown = true;
     }
 }
 // @ts-ignore
@@ -511,7 +528,6 @@ class BlasterBullet extends MoveableEntity {
         super(initialVerticalPosition, initialHorizontalPosition, BlasterBullet.HEIGHT, BlasterBullet.WIDTH);
         this.COLOR = "red";
         this.bulletSpeed = bulletSpeed;
-        this.startMovingUp();
     }
     draw() {
         this.updatePosition();
@@ -521,11 +537,16 @@ class BlasterBullet extends MoveableEntity {
         this.canvas.canvasContext.fillStyle = previousFillStyle;
     }
     isBulletOffScreen() {
-        return this.verticalPosition <= -BlasterBullet.HEIGHT;
+        const isAboveCanvas = this.verticalPosition <= -BlasterBullet.HEIGHT;
+        const isBelowCanvas = this.verticalPosition >= this.canvas.height;
+        return isAboveCanvas || isBelowCanvas;
     }
     updatePosition() {
         if (this.isMovingUp) {
             this.moveUp(this.bulletSpeed);
+        }
+        else if (this.isMovingDown) {
+            this.moveDown(this.bulletSpeed);
         }
     }
 }
@@ -537,6 +558,7 @@ class SpaceInvaders {
         this.lastTimestamp = 0;
         this.score = 0;
         this.bulletArray = [];
+        this.enemyBulletArray = [];
         const millisecondsPerFrame = 1000 / this.FPS;
         this.renderMaximumMilliseconds = Math.floor(millisecondsPerFrame) + 1;
         this.renderMinimumMilliseconds = Math.floor(millisecondsPerFrame) - 1;
@@ -556,14 +578,20 @@ class SpaceInvaders {
             return;
         this.canvas.canvasContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.removeCollidedBulletsAndEnemies();
-        this.enemyGroup.getEnemies().forEach((enemy) => enemy.draw());
+        this.enemyGroup.getEnemies().forEach((enemy) => {
+            enemy.draw();
+            this.addNextShot(enemy.getNextShot(), this.enemyBulletArray);
+        });
+        this.renderBullets(this.enemyBulletArray);
         this.player.draw();
-        const nextShot = this.player.getNextShot();
-        if (nextShot !== null) {
-            this.bulletArray.push(nextShot);
-        }
-        this.renderBullets();
-        this.headsUpDisplay.draw(this.score, 95);
+        this.addNextShot(this.player.getNextShot(), this.bulletArray);
+        this.renderBullets(this.bulletArray);
+        this.headsUpDisplay.draw(this.score, 100);
+    }
+    addNextShot(nextShot, bullets) {
+        if (!nextShot)
+            return;
+        bullets.push(nextShot);
     }
     shouldRenderFrame(timestamp) {
         const deltaTimeMilliseconds = Math.floor(timestamp - this.lastTimestamp);
@@ -571,16 +599,16 @@ class SpaceInvaders {
         return (this.renderMinimumMilliseconds <= deltaTimeMilliseconds &&
             deltaTimeMilliseconds <= this.renderMaximumMilliseconds);
     }
-    renderBullets() {
+    renderBullets(bullets) {
         let index = 0;
-        while (index < this.bulletArray.length) {
-            const currentBullet = this.bulletArray[index];
+        while (index < bullets.length) {
+            const currentBullet = bullets[index];
             if (!currentBullet.isBulletOffScreen()) {
                 currentBullet.draw();
                 index++;
             }
             else {
-                this.bulletArray.splice(index, 1);
+                bullets.splice(index, 1);
             }
         }
     }
