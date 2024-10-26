@@ -51,10 +51,11 @@ class SpaceInvaders {
 
     this.removeCollidedBulletsAndEnemies();
 
-    this.enemyGroup.getEnemies().forEach((enemy) => {
-      enemy.draw();
-      this.addNextShot(enemy.getNextShot(), this.enemyBulletArray);
-    });
+    this.enemyGroup.getEnemies().forEach((enemy) => enemy.draw());
+    this.addNextShot(
+      this.enemyGroup.triggerEnemyToShoot(),
+      this.enemyBulletArray
+    );
 
     this.player.draw();
     this.addNextShot(this.player.getNextShot(), this.bulletArray);

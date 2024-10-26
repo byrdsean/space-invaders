@@ -20,6 +20,14 @@ class CanvasInstance {
 }
 CanvasInstance.GAME_SCREEN_ID = "game_screen";
 CanvasInstance.BORDER_WIDTH = 1;
+class MathHelper {
+    // This method was copied from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
+    static getRandomInt(min, max) {
+        const minCeiled = Math.ceil(min);
+        const maxFloored = Math.floor(max);
+        return Math.floor(Math.random() * (maxFloored - minCeiled) + minCeiled); // The maximum is exclusive and the minimum is inclusive
+    }
+}
 var EnemyType;
 (function (EnemyType) {
     EnemyType[EnemyType["WEAK"] = 0] = "WEAK";
@@ -258,8 +266,13 @@ EnemyConstants.levels = [
 class EnemyGroup {
     constructor() {
         this.ENEMY_SPACING = 5;
+        this.MAX_COOLDOWN_PERIOD_MILLISECONDS = 2500;
+        this.MIN_COOLDOWN_PERIOD_MILLISECONDS = 100;
+        this.CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS = 100;
         this.enemies = [];
         this.currentLevel = 1;
+        this.timeLastShotFired = 0;
+        this.cooldownPeriod = this.MAX_COOLDOWN_PERIOD_MILLISECONDS;
         this.canvas = CanvasInstance.getInstance();
         this.addEnemies();
     }
@@ -267,9 +280,31 @@ class EnemyGroup {
         return [...this.enemies];
     }
     removeEnemy(index) {
-        return index < 0 || this.enemies.length <= index
-            ? null
-            : this.enemies.splice(index, 1)[0];
+        if (index < 0 || this.enemies.length <= index)
+            return null;
+        const newCoolDownPeriod = this.cooldownPeriod - this.CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS;
+        this.cooldownPeriod =
+            newCoolDownPeriod < this.MIN_COOLDOWN_PERIOD_MILLISECONDS
+                ? this.MIN_COOLDOWN_PERIOD_MILLISECONDS
+                : newCoolDownPeriod;
+        return this.enemies.splice(index, 1)[0];
+    }
+    triggerEnemyToShoot() {
+        if (this.enemies.length === 0)
+            return null;
+        const currentTime = Date.now();
+        const shouldFire = currentTime - this.timeLastShotFired >= this.cooldownPeriod;
+        if (!shouldFire)
+            return null;
+        console.log({
+            currentTime,
+            timeLastShotFired: this.timeLastShotFired,
+            difference: currentTime - this.timeLastShotFired,
+            cooldownPeriod: this.cooldownPeriod,
+        });
+        this.timeLastShotFired = currentTime;
+        const enemyIndex = MathHelper.getRandomInt(0, this.enemies.length);
+        return this.enemies[enemyIndex].getNextShot();
     }
     addEnemies() {
         const levelData = EnemyConstants.levels.find((levelData) => levelData.level == this.currentLevel);
@@ -578,13 +613,11 @@ class SpaceInvaders {
             return;
         this.canvas.canvasContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.removeCollidedBulletsAndEnemies();
-        this.enemyGroup.getEnemies().forEach((enemy) => {
-            enemy.draw();
-            this.addNextShot(enemy.getNextShot(), this.enemyBulletArray);
-        });
-        this.renderBullets(this.enemyBulletArray);
+        this.enemyGroup.getEnemies().forEach((enemy) => enemy.draw());
+        this.addNextShot(this.enemyGroup.triggerEnemyToShoot(), this.enemyBulletArray);
         this.player.draw();
         this.addNextShot(this.player.getNextShot(), this.bulletArray);
+        this.renderBullets(this.enemyBulletArray);
         this.renderBullets(this.bulletArray);
         this.headsUpDisplay.draw(this.score, 100);
     }

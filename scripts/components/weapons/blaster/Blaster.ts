@@ -8,7 +8,7 @@ class Blaster {
   private verticalPosition: number;
   private horizontalPosition: number;
 
-  private timeLastShotFired: number = 0;
+  private timeLastShotFired = 0;
   private cooldownPeriod = this.MAX_COOLDOWN_PERIOD_MILLISECONDS;
   private isShootingDown = false;
 
