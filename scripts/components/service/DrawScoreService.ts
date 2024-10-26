@@ -1,13 +1,15 @@
 class DrawScoreService {
   private readonly FONT_SIZE_PIXELS = 12;
-  private readonly BUFFER_SIZE_PIXELS = 10;
   private readonly FONT_COLOR = "white";
-  private readonly canvas: Canvas;
-  private readonly fontFamily;
 
-  constructor() {
+  private readonly canvas: Canvas;
+  private readonly fontFamily: string;
+  private readonly bufferSize: number;
+
+  constructor(bufferSize: number) {
     this.canvas = CanvasInstance.getInstance();
     this.fontFamily = `${this.FONT_SIZE_PIXELS}px \"Press Start 2P\", Arial`;
+    this.bufferSize = bufferSize;
   }
 
   drawScore(score: number): BoundingContext {
@@ -16,8 +18,8 @@ class DrawScoreService {
 
     const measuredText = this.canvas.canvasContext.measureText(scoreText);
     return {
-      x: this.BUFFER_SIZE_PIXELS,
-      y: this.FONT_SIZE_PIXELS + this.BUFFER_SIZE_PIXELS,
+      x: this.bufferSize,
+      y: this.FONT_SIZE_PIXELS + this.bufferSize,
       width: measuredText.width,
       height: this.FONT_SIZE_PIXELS,
     };
@@ -28,8 +30,8 @@ class DrawScoreService {
     this.canvas.canvasContext.font = this.fontFamily;
     this.canvas.canvasContext.fillText(
       scoreText,
-      this.BUFFER_SIZE_PIXELS,
-      this.FONT_SIZE_PIXELS + this.BUFFER_SIZE_PIXELS
+      this.bufferSize,
+      this.FONT_SIZE_PIXELS + this.bufferSize
     );
   }
 }

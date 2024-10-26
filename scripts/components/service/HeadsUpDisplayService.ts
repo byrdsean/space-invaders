@@ -1,11 +1,12 @@
 class HeadsUpDisplayService {
+  private readonly BUFFER_SIZE_PIXELS = 10;
   private readonly canvas: Canvas;
   private readonly drawScoreService: DrawScoreService;
   private readonly drawPlayerHealth: DrawPlayerHealth;
 
   constructor() {
     this.canvas = CanvasInstance.getInstance();
-    this.drawScoreService = new DrawScoreService();
+    this.drawScoreService = new DrawScoreService(this.BUFFER_SIZE_PIXELS);
     this.drawPlayerHealth = new DrawPlayerHealth();
   }
 
