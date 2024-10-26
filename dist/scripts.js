@@ -232,7 +232,7 @@ EnemyConstants.levels = [
         level: 1,
         enemies: [
             [
-                // EnemyType.WEAK,
+                EnemyType.WEAK,
                 EnemyType.WEAK,
                 EnemyType.WEAK,
                 EnemyType.WEAK,
@@ -269,6 +269,11 @@ class EnemyGroup {
     }
     getEnemies() {
         return [...this.enemies];
+    }
+    removeEnemy(index) {
+        return index < 0 || this.enemies.length <= index
+            ? null
+            : this.enemies.splice(index, 1)[0];
     }
     addEnemies() {
         const levelData = EnemyConstants.levels.find((levelData) => levelData.level == this.currentLevel);
@@ -349,6 +354,27 @@ class KeyboardControls {
         });
     }
 }
+class CollisionDetectionService {
+    constructor() { }
+    hasCollided(object1, object2) {
+        if (!object1 || !object2) {
+            return false;
+        }
+        if (object1.horizontalPosition + object1.WIDTH < object2.horizontalPosition) {
+            return false;
+        }
+        if (object2.horizontalPosition + object2.WIDTH < object1.horizontalPosition) {
+            return false;
+        }
+        if (object1.verticalPosition + object1.HEIGHT < object2.verticalPosition) {
+            return false;
+        }
+        if (object2.verticalPosition + object2.HEIGHT < object1.verticalPosition) {
+            return false;
+        }
+        return true;
+    }
+}
 class Blaster {
     constructor(initialVerticalPosition) {
         this.BULLET_SPEED = 5;
@@ -427,11 +453,13 @@ class SpaceInvaders {
         this.keyboardControls = new KeyboardControls(this.player);
         this.keyboardControls.addKeyDownControls();
         this.keyboardControls.addKeyUpControls();
+        this.collisionDetector = new CollisionDetectionService();
     }
     renderFrame(timestamp) {
         if (!this.shouldRenderFrame(timestamp))
             return;
         this.canvas.canvasContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.removeCollidedBulletsAndEnemies();
         this.enemyGroup.getEnemies().forEach((enemy) => enemy.draw());
         this.player.draw();
         const nextShot = this.player.getNextShot();
@@ -458,6 +486,35 @@ class SpaceInvaders {
                 this.bulletArray.splice(index, 1);
             }
         }
+    }
+    removeCollidedBulletsAndEnemies() {
+        if (this.bulletArray.length === 0)
+            return;
+        let index = 0;
+        while (index < this.bulletArray.length) {
+            const removedEnemies = this.removeCollidedEnemy(this.bulletArray[index]);
+            if (0 < removedEnemies.length) {
+                this.bulletArray.splice(index, 1);
+            }
+            else {
+                index++;
+            }
+        }
+    }
+    removeCollidedEnemy(bullet) {
+        let index = 0;
+        const removedEnemies = [];
+        while (index < this.enemyGroup.getEnemies().length) {
+            const hasCollided = this.collisionDetector.hasCollided(bullet, this.enemyGroup.getEnemies()[index]);
+            if (hasCollided) {
+                const removedEnemy = this.enemyGroup.removeEnemy(index);
+                removedEnemies.push(removedEnemy);
+            }
+            else {
+                index++;
+            }
+        }
+        return removedEnemies;
     }
 }
 const spaceInvaders = new SpaceInvaders();

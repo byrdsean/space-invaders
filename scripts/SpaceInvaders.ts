@@ -8,6 +8,7 @@ class SpaceInvaders {
   private readonly player: Player;
   private readonly enemyGroup: EnemyGroup;
   private readonly keyboardControls: KeyboardControls;
+  private readonly collisionDetector: CollisionDetectionService;
   private readonly renderMaximumMilliseconds: number;
   private readonly renderMinimumMilliseconds: number;
 
@@ -30,6 +31,8 @@ class SpaceInvaders {
     this.keyboardControls = new KeyboardControls(this.player);
     this.keyboardControls.addKeyDownControls();
     this.keyboardControls.addKeyUpControls();
+
+    this.collisionDetector = new CollisionDetectionService();
   }
 
   renderFrame(timestamp: number) {
@@ -41,6 +44,8 @@ class SpaceInvaders {
       this.canvas.width,
       this.canvas.height
     );
+
+    this.removeCollidedBulletsAndEnemies();
 
     this.enemyGroup.getEnemies().forEach((enemy) => enemy.draw());
     this.player.draw();
@@ -74,6 +79,38 @@ class SpaceInvaders {
         this.bulletArray.splice(index, 1);
       }
     }
+  }
+
+  private removeCollidedBulletsAndEnemies() {
+    if (this.bulletArray.length === 0) return;
+
+    let index = 0;
+    while (index < this.bulletArray.length) {
+      const removedEnemies = this.removeCollidedEnemy(this.bulletArray[index]);
+      if (0 < removedEnemies.length) {
+        this.bulletArray.splice(index, 1);
+      } else {
+        index++;
+      }
+    }
+  }
+
+  private removeCollidedEnemy(bullet: BlasterBullet): Enemy[] {
+    let index = 0;
+    const removedEnemies = [] as Enemy[];
+    while (index < this.enemyGroup.getEnemies().length) {
+      const hasCollided = this.collisionDetector.hasCollided(
+        bullet,
+        this.enemyGroup.getEnemies()[index]
+      );
+      if (hasCollided) {
+        const removedEnemy = this.enemyGroup.removeEnemy(index)!;
+        removedEnemies.push(removedEnemy);
+      } else {
+        index++;
+      }
+    }
+    return removedEnemies;
   }
 }
 

@@ -1,6 +1,6 @@
 abstract class MoveableEntity {
-  private readonly HEIGHT: number;
-  private readonly WIDTH: number;
+  public readonly HEIGHT: number;
+  public readonly WIDTH: number;
 
   verticalPosition: number;
   horizontalPosition: number;
