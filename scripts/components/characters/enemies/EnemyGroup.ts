@@ -14,6 +14,12 @@ class EnemyGroup {
     return [...this.enemies];
   }
 
+  removeEnemy(index: number): Enemy | null {
+    return index < 0 || this.enemies.length <= index
+      ? null
+      : this.enemies.splice(index, 1)[0];
+  }
+
   private addEnemies() {
     const levelData = EnemyConstants.levels.find(
       (levelData) => levelData.level == this.currentLevel
