@@ -375,6 +375,99 @@ class CollisionDetectionService {
         return true;
     }
 }
+class DrawPlayerHealth {
+    constructor() {
+        this.HEALTH_BAR_COLOR = "white";
+        this.HEALTH_BAR_DIVET_COLOR = "yellow";
+        this.HEALTH_BAR_DIVET_HEIGHT = 5;
+        this.HEALTH_BAR_DIVET_WIDTH = 15;
+        this.HEALTH_BAR_DIVET_BUFFER = 2;
+        this.MAX_HEALTH_BAR_DIVETS = 20;
+        this.BORDER_WIDTH_PIXELS = 1;
+        this.canvas = CanvasInstance.getInstance();
+    }
+    drawPlayerHealth(startingX, startingY, playerHealthPercentage) {
+        const validatedPlayerHealth = this.validatePlayerHealthPercentage(playerHealthPercentage);
+        const healthBarHeight = this.HEALTH_BAR_DIVET_HEIGHT * this.MAX_HEALTH_BAR_DIVETS +
+            this.HEALTH_BAR_DIVET_BUFFER * this.MAX_HEALTH_BAR_DIVETS +
+            this.HEALTH_BAR_DIVET_BUFFER * 2;
+        const healthBarWidth = this.HEALTH_BAR_DIVET_WIDTH +
+            this.HEALTH_BAR_DIVET_BUFFER * 2 +
+            this.BORDER_WIDTH_PIXELS * 2;
+        this.drawPlayerHealthDivets(startingX, startingY, validatedPlayerHealth);
+        this.canvas.canvasContext.strokeStyle = this.HEALTH_BAR_COLOR;
+        this.canvas.canvasContext.strokeRect(startingX, startingY, healthBarWidth, healthBarHeight);
+        return {
+            x: startingX,
+            y: startingY,
+            width: healthBarWidth,
+            height: healthBarHeight,
+        };
+    }
+    validatePlayerHealthPercentage(playerHealthPercentage) {
+        if (playerHealthPercentage < 0)
+            return 0;
+        if (playerHealthPercentage > 100)
+            return 100;
+        return playerHealthPercentage;
+    }
+    drawPlayerHealthDivets(startingX, startingY, playerHealthPercentage) {
+        const numberRange = [...new Array(this.MAX_HEALTH_BAR_DIVETS).keys()];
+        const numberOfDivetsToHide = this.MAX_HEALTH_BAR_DIVETS -
+            Math.ceil(this.MAX_HEALTH_BAR_DIVETS * (playerHealthPercentage / 100));
+        this.canvas.canvasContext.fillStyle = this.HEALTH_BAR_DIVET_COLOR;
+        numberRange.forEach((index) => this.drawHealthDivet(index, numberOfDivetsToHide, startingX, startingY));
+    }
+    drawHealthDivet(divetIndex, numberOfDivetsToHide, startingX, startingY) {
+        if (divetIndex < numberOfDivetsToHide)
+            return;
+        const xPosition = startingX + this.BORDER_WIDTH_PIXELS + this.HEALTH_BAR_DIVET_BUFFER;
+        const yPosition = startingY +
+            this.BORDER_WIDTH_PIXELS +
+            this.HEALTH_BAR_DIVET_BUFFER +
+            divetIndex *
+                (this.HEALTH_BAR_DIVET_HEIGHT + this.HEALTH_BAR_DIVET_BUFFER);
+        this.canvas.canvasContext.fillRect(xPosition, yPosition, this.HEALTH_BAR_DIVET_WIDTH, this.HEALTH_BAR_DIVET_HEIGHT);
+    }
+}
+class DrawScoreService {
+    constructor() {
+        this.FONT_SIZE_PIXELS = 12;
+        this.BUFFER_SIZE_PIXELS = 10;
+        this.FONT_COLOR = "white";
+        this.canvas = CanvasInstance.getInstance();
+        this.fontFamily = `${this.FONT_SIZE_PIXELS}px \"Press Start 2P\", Arial`;
+    }
+    drawScore(score) {
+        const scoreText = `Score: ${score}`;
+        this.drawTextToCanvas(scoreText);
+        const measuredText = this.canvas.canvasContext.measureText(scoreText);
+        return {
+            x: this.BUFFER_SIZE_PIXELS,
+            y: this.FONT_SIZE_PIXELS + this.BUFFER_SIZE_PIXELS,
+            width: measuredText.width,
+            height: this.FONT_SIZE_PIXELS,
+        };
+    }
+    drawTextToCanvas(scoreText) {
+        this.canvas.canvasContext.fillStyle = this.FONT_COLOR;
+        this.canvas.canvasContext.font = this.fontFamily;
+        this.canvas.canvasContext.fillText(scoreText, this.BUFFER_SIZE_PIXELS, this.FONT_SIZE_PIXELS + this.BUFFER_SIZE_PIXELS);
+    }
+}
+class HeadsUpDisplayService {
+    constructor() {
+        this.canvas = CanvasInstance.getInstance();
+        this.drawScoreService = new DrawScoreService();
+        this.drawPlayerHealth = new DrawPlayerHealth();
+    }
+    draw(score, playerHealthPercentage) {
+        this.canvas.canvasContext.save();
+        const scoreBoundingContext = this.drawScoreService.drawScore(score);
+        this.drawPlayerHealth.drawPlayerHealth(scoreBoundingContext.x, scoreBoundingContext.y + scoreBoundingContext.height, playerHealthPercentage);
+        this.canvas.canvasContext.restore();
+    }
+}
 class Blaster {
     constructor(initialVerticalPosition) {
         this.BULLET_SPEED = 5;
@@ -441,6 +534,7 @@ class SpaceInvaders {
     constructor() {
         this.FPS = 60;
         this.lastTimestamp = 0;
+        this.score = 0;
         this.bulletArray = [];
         const millisecondsPerFrame = 1000 / this.FPS;
         this.renderMaximumMilliseconds = Math.floor(millisecondsPerFrame) + 1;
@@ -454,6 +548,7 @@ class SpaceInvaders {
         this.keyboardControls.addKeyDownControls();
         this.keyboardControls.addKeyUpControls();
         this.collisionDetector = new CollisionDetectionService();
+        this.headsUpDisplay = new HeadsUpDisplayService();
     }
     renderFrame(timestamp) {
         if (!this.shouldRenderFrame(timestamp))
@@ -467,6 +562,7 @@ class SpaceInvaders {
             this.bulletArray.push(nextShot);
         }
         this.renderBullets();
+        this.headsUpDisplay.draw(this.score, 95);
     }
     shouldRenderFrame(timestamp) {
         const deltaTimeMilliseconds = Math.floor(timestamp - this.lastTimestamp);

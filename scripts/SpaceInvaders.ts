@@ -2,6 +2,7 @@ class SpaceInvaders {
   private readonly FPS = 60;
 
   private lastTimestamp = 0;
+  private score = 0;
   private bulletArray: BlasterBullet[] = [];
 
   private readonly canvas: Canvas;
@@ -9,6 +10,7 @@ class SpaceInvaders {
   private readonly enemyGroup: EnemyGroup;
   private readonly keyboardControls: KeyboardControls;
   private readonly collisionDetector: CollisionDetectionService;
+  private readonly headsUpDisplay: HeadsUpDisplayService;
   private readonly renderMaximumMilliseconds: number;
   private readonly renderMinimumMilliseconds: number;
 
@@ -33,6 +35,7 @@ class SpaceInvaders {
     this.keyboardControls.addKeyUpControls();
 
     this.collisionDetector = new CollisionDetectionService();
+    this.headsUpDisplay = new HeadsUpDisplayService();
   }
 
   renderFrame(timestamp: number) {
@@ -55,6 +58,8 @@ class SpaceInvaders {
       this.bulletArray.push(nextShot);
     }
     this.renderBullets();
+
+    this.headsUpDisplay.draw(this.score, 95);
   }
 
   private shouldRenderFrame(timestamp: number): boolean {
