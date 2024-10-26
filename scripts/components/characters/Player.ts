@@ -5,9 +5,7 @@ class Player extends MoveableEntity {
   private static COLOR = "green";
 
   private isShooting: boolean = false;
-
   private blaster: Blaster;
-  private blasterHorizontalPosition: number = 0;
 
   constructor(
     initialVerticalPosition: number,
@@ -19,8 +17,11 @@ class Player extends MoveableEntity {
       Player.HEIGHT,
       Player.WIDTH
     );
-    this.blaster = new Blaster(this.verticalPosition);
-    this.updateBlasterHorizontalPosition();
+    this.blaster = new Blaster(
+      this.verticalPosition,
+      this.horizontalPosition,
+      Player.WIDTH
+    );
   }
 
   reset() {
@@ -31,8 +32,11 @@ class Player extends MoveableEntity {
     this.horizontalPosition = Player.getInitialHorizontalPosition(
       this.canvas.height
     );
-    this.blaster = new Blaster(this.verticalPosition);
-    this.updateBlasterHorizontalPosition();
+    this.blaster = new Blaster(
+      this.verticalPosition,
+      this.horizontalPosition,
+      Player.WIDTH
+    );
   }
 
   override draw() {
@@ -52,9 +56,7 @@ class Player extends MoveableEntity {
   }
 
   getNextShot(): BlasterBullet | null {
-    return this.isShooting
-      ? this.blaster.shoot(this.blasterHorizontalPosition)
-      : null;
+    return this.isShooting ? this.blaster.shoot() : null;
   }
 
   startShooting() {
@@ -89,14 +91,7 @@ class Player extends MoveableEntity {
     }
 
     if (this.isMovingLeft || this.isMovingRight) {
-      this.updateBlasterHorizontalPosition();
+      this.blaster.updateBlasterHorizontalPosition(this.horizontalPosition);
     }
-  }
-
-  private updateBlasterHorizontalPosition() {
-    this.blasterHorizontalPosition =
-      this.horizontalPosition +
-      Math.floor(Player.WIDTH / 2) -
-      this.blaster.getBlasterHorizontalOffset();
   }
 }

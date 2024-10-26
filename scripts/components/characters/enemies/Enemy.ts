@@ -4,6 +4,8 @@ class Enemy extends MoveableEntity {
   public static WIDTH = 25;
   private static COLOR = "purple";
 
+  private blaster: Blaster;
+
   maxLeftPosition = 0;
   maxRightPosition = 0;
   nextVerticalPositonToMoveDown = 0;
@@ -24,6 +26,13 @@ class Enemy extends MoveableEntity {
     this.maxLeftPosition = maxLeftPosition;
     this.maxRightPosition = maxRightPosition;
     this.nextVerticalPositonToMoveDown = initialVerticalPosition;
+
+    this.blaster = new Blaster(
+      this.verticalPosition + Enemy.HEIGHT,
+      initialHorizontalPosition,
+      Enemy.WIDTH
+    );
+    this.blaster.shootDownwards();
   }
 
   override draw() {
@@ -42,6 +51,10 @@ class Enemy extends MoveableEntity {
     this.canvas.canvasContext.fillStyle = previousFillStyle;
   }
 
+  getNextShot(): BlasterBullet | null {
+    return this.blaster.shoot();
+  }
+
   private updatePosition() {
     this.updateMoveLeft();
     this.updateMoveRight();
@@ -57,6 +70,7 @@ class Enemy extends MoveableEntity {
       this.startMovingDown();
     } else {
       this.moveLeft(this.movementSpeed, this.maxLeftPosition);
+      this.blaster.updateBlasterHorizontalPosition(this.horizontalPosition);
     }
   }
 
@@ -69,24 +83,31 @@ class Enemy extends MoveableEntity {
       this.startMovingDown();
     } else {
       this.moveRight(this.movementSpeed, this.maxRightPosition);
+      this.blaster.updateBlasterHorizontalPosition(this.horizontalPosition);
     }
   }
 
   private updateMoveDown() {
     if (!this.isMovingDown) return;
 
-    if (this.verticalPosition >= this.nextVerticalPositonToMoveDown) {
-      this.stopMovingDown();
-
-      if (this.horizontalPosition <= this.maxLeftPosition) {
-        this.startMovingRight();
-      }
-
-      if (this.horizontalPosition + Enemy.WIDTH >= this.maxRightPosition) {
-        this.startMovingLeft();
-      }
-    } else {
+    if (this.verticalPosition < this.nextVerticalPositonToMoveDown) {
       this.moveDown(this.movementSpeed);
+
+      this.blaster.updateBlasterVerticalPosition(
+        this.verticalPosition + Enemy.HEIGHT
+      );
+
+      return;
+    }
+
+    this.stopMovingDown();
+
+    if (this.horizontalPosition <= this.maxLeftPosition) {
+      this.startMovingRight();
+    }
+
+    if (this.horizontalPosition + Enemy.WIDTH >= this.maxRightPosition) {
+      this.startMovingLeft();
     }
   }
 
