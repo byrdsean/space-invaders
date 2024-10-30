@@ -1,9 +1,15 @@
 class EnemyGroup {
   private readonly ENEMY_SPACING = 5;
+  private readonly MAX_COOLDOWN_PERIOD_MILLISECONDS = 2500;
+  private readonly MIN_COOLDOWN_PERIOD_MILLISECONDS = 500;
+  private readonly CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS = 200;
   private readonly canvas: Canvas;
 
   private enemies: Enemy[] = [];
   private currentLevel = 1;
+  private timeLastShotFired = 0;
+
+  private cooldownPeriod = this.MAX_COOLDOWN_PERIOD_MILLISECONDS;
 
   constructor() {
     this.canvas = CanvasInstance.getInstance();
@@ -15,9 +21,32 @@ class EnemyGroup {
   }
 
   removeEnemy(index: number): Enemy | null {
-    return index < 0 || this.enemies.length <= index
-      ? null
-      : this.enemies.splice(index, 1)[0];
+    if (index < 0 || this.enemies.length <= index) return null;
+
+    const newCoolDownPeriod =
+      this.cooldownPeriod - this.CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS;
+
+    this.cooldownPeriod =
+      newCoolDownPeriod < this.MIN_COOLDOWN_PERIOD_MILLISECONDS
+        ? this.MIN_COOLDOWN_PERIOD_MILLISECONDS
+        : newCoolDownPeriod;
+
+    return this.enemies.splice(index, 1)[0];
+  }
+
+  triggerEnemyToShoot(): BlasterBullet | null {
+    if (this.enemies.length === 0) return null;
+
+    const currentTime = Date.now();
+    const shouldFire =
+      currentTime - this.timeLastShotFired >= this.cooldownPeriod;
+
+    if (!shouldFire) return null;
+
+    this.timeLastShotFired = currentTime;
+
+    const enemyIndex = MathHelper.getRandomInt(0, this.enemies.length);
+    return this.enemies[enemyIndex].getNextShot();
   }
 
   private addEnemies() {
