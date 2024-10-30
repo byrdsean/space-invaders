@@ -267,8 +267,8 @@ class EnemyGroup {
     constructor() {
         this.ENEMY_SPACING = 5;
         this.MAX_COOLDOWN_PERIOD_MILLISECONDS = 2500;
-        this.MIN_COOLDOWN_PERIOD_MILLISECONDS = 100;
-        this.CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS = 100;
+        this.MIN_COOLDOWN_PERIOD_MILLISECONDS = 500;
+        this.CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS = 200;
         this.enemies = [];
         this.currentLevel = 1;
         this.timeLastShotFired = 0;
@@ -296,12 +296,6 @@ class EnemyGroup {
         const shouldFire = currentTime - this.timeLastShotFired >= this.cooldownPeriod;
         if (!shouldFire)
             return null;
-        console.log({
-            currentTime,
-            timeLastShotFired: this.timeLastShotFired,
-            difference: currentTime - this.timeLastShotFired,
-            cooldownPeriod: this.cooldownPeriod,
-        });
         this.timeLastShotFired = currentTime;
         const enemyIndex = MathHelper.getRandomInt(0, this.enemies.length);
         return this.enemies[enemyIndex].getNextShot();

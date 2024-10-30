@@ -1,8 +1,8 @@
 class EnemyGroup {
   private readonly ENEMY_SPACING = 5;
   private readonly MAX_COOLDOWN_PERIOD_MILLISECONDS = 2500;
-  private readonly MIN_COOLDOWN_PERIOD_MILLISECONDS = 100;
-  private readonly CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS = 100;
+  private readonly MIN_COOLDOWN_PERIOD_MILLISECONDS = 500;
+  private readonly CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS = 200;
   private readonly canvas: Canvas;
 
   private enemies: Enemy[] = [];
