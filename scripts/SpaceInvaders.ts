@@ -50,6 +50,8 @@ class SpaceInvaders {
     );
 
     this.removeCollidedBulletsAndEnemies();
+    this.checkPlayerHit();
+    this.headsUpDisplay.draw(this.score, this.player.getHealth());
 
     this.enemyGroup.getEnemies().forEach((enemy) => enemy.draw());
     this.addNextShot(
@@ -62,8 +64,6 @@ class SpaceInvaders {
 
     this.renderBullets(this.enemyBulletArray);
     this.renderBullets(this.bulletArray);
-
-    this.headsUpDisplay.draw(this.score, 100);
   }
 
   private addNextShot(
@@ -94,6 +94,23 @@ class SpaceInvaders {
         index++;
       } else {
         bullets.splice(index, 1);
+      }
+    }
+  }
+
+  private checkPlayerHit() {
+    if (this.enemyBulletArray.length === 0) return;
+
+    let index = 0;
+    while (index < this.enemyBulletArray.length) {
+      const bullet = this.enemyBulletArray[index];
+      const hasCollided = this.collisionDetector.hasCollided(bullet, this.player);
+
+      if (hasCollided) {
+        this.enemyBulletArray.splice(index, 1);
+        this.player.decrementHealth(bullet.getDamageAmount());
+      } else {
+        index++;
       }
     }
   }

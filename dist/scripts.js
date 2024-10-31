@@ -98,8 +98,10 @@ class MoveableEntity {
 class Player extends MoveableEntity {
     constructor(initialVerticalPosition, initialHorizontalPosition) {
         super(initialVerticalPosition, initialHorizontalPosition, Player.HEIGHT, Player.WIDTH);
+        this.health = 0;
         this.isShooting = false;
         this.blaster = new Blaster(this.verticalPosition, this.horizontalPosition, Player.WIDTH);
+        this.health = Player.MAX_HEALTH;
     }
     reset() {
         this.isShooting = false;
@@ -129,6 +131,15 @@ class Player extends MoveableEntity {
     decreaseRateOfFire() {
         this.blaster.decreaseRateOfFire();
     }
+    getHealth() {
+        return this.health;
+    }
+    decrementHealth(removeValue) {
+        if (removeValue < 0)
+            return;
+        const updatedHealth = this.health - removeValue;
+        this.health = updatedHealth < 0 ? 0 : updatedHealth;
+    }
     static getInitialVerticalPosition(maxHeight) {
         return maxHeight - this.HEIGHT;
     }
@@ -150,6 +161,7 @@ class Player extends MoveableEntity {
 Player.HEIGHT = 25;
 Player.WIDTH = 25;
 Player.COLOR = "green";
+Player.MAX_HEALTH = 100;
 // @ts-ignore
 class Enemy extends MoveableEntity {
     constructor(initialVerticalPosition, initialHorizontalPosition, maxLeftPosition, maxRightPosition) {
@@ -558,6 +570,9 @@ class BlasterBullet extends MoveableEntity {
         this.COLOR = "red";
         this.bulletSpeed = bulletSpeed;
     }
+    getDamageAmount() {
+        return BlasterBullet.DAMAGE;
+    }
     draw() {
         this.updatePosition();
         const previousFillStyle = this.canvas.canvasContext.fillStyle;
@@ -581,6 +596,7 @@ class BlasterBullet extends MoveableEntity {
 }
 BlasterBullet.HEIGHT = 5;
 BlasterBullet.WIDTH = 5;
+BlasterBullet.DAMAGE = 10;
 class SpaceInvaders {
     constructor() {
         this.FPS = 60;
@@ -607,13 +623,14 @@ class SpaceInvaders {
             return;
         this.canvas.canvasContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.removeCollidedBulletsAndEnemies();
+        this.checkPlayerHit();
+        this.headsUpDisplay.draw(this.score, this.player.getHealth());
         this.enemyGroup.getEnemies().forEach((enemy) => enemy.draw());
         this.addNextShot(this.enemyGroup.triggerEnemyToShoot(), this.enemyBulletArray);
         this.player.draw();
         this.addNextShot(this.player.getNextShot(), this.bulletArray);
         this.renderBullets(this.enemyBulletArray);
         this.renderBullets(this.bulletArray);
-        this.headsUpDisplay.draw(this.score, 100);
     }
     addNextShot(nextShot, bullets) {
         if (!nextShot)
@@ -636,6 +653,22 @@ class SpaceInvaders {
             }
             else {
                 bullets.splice(index, 1);
+            }
+        }
+    }
+    checkPlayerHit() {
+        if (this.enemyBulletArray.length === 0)
+            return;
+        let index = 0;
+        while (index < this.enemyBulletArray.length) {
+            const bullet = this.enemyBulletArray[index];
+            const hasCollided = this.collisionDetector.hasCollided(bullet, this.player);
+            if (hasCollided) {
+                this.enemyBulletArray.splice(index, 1);
+                this.player.decrementHealth(bullet.getDamageAmount());
+            }
+            else {
+                index++;
             }
         }
     }
