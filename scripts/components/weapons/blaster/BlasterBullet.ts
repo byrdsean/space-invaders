@@ -2,6 +2,7 @@
 class BlasterBullet extends MoveableEntity {
   public static HEIGHT = 5;
   public static WIDTH = 5;
+  private static DAMAGE = 10;
   private readonly COLOR = "red";
 
   private readonly bulletSpeed: number;
@@ -18,6 +19,10 @@ class BlasterBullet extends MoveableEntity {
       BlasterBullet.WIDTH
     );
     this.bulletSpeed = bulletSpeed;
+  }
+
+  getDamageAmount(): number {
+    return BlasterBullet.DAMAGE;
   }
 
   override draw() {
