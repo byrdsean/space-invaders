@@ -34,7 +34,7 @@ class EnemyGroup {
     return this.enemies.splice(index, 1)[0];
   }
 
-  triggerEnemyToShoot(): BlasterBullet | null {
+  getNextShot(): BlasterBullet | null {
     if (this.enemies.length === 0) return null;
 
     const currentTime = Date.now();

@@ -98,10 +98,9 @@ class MoveableEntity {
 class Player extends MoveableEntity {
     constructor(initialVerticalPosition, initialHorizontalPosition) {
         super(initialVerticalPosition, initialHorizontalPosition, Player.HEIGHT, Player.WIDTH);
-        this.health = 0;
         this.isShooting = false;
         this.blaster = new Blaster(this.verticalPosition, this.horizontalPosition, Player.WIDTH);
-        this.health = Player.MAX_HEALTH;
+        this.healthManagerService = new HealthManagerService(Player.MAX_HEALTH);
     }
     reset() {
         this.isShooting = false;
@@ -119,6 +118,12 @@ class Player extends MoveableEntity {
     getNextShot() {
         return this.isShooting ? this.blaster.shoot() : null;
     }
+    getHealth() {
+        return this.healthManagerService.getHealth();
+    }
+    decrementHealth(removeValue) {
+        this.healthManagerService.decrementHealth(removeValue);
+    }
     startShooting() {
         this.isShooting = true;
     }
@@ -130,15 +135,6 @@ class Player extends MoveableEntity {
     }
     decreaseRateOfFire() {
         this.blaster.decreaseRateOfFire();
-    }
-    getHealth() {
-        return this.health;
-    }
-    decrementHealth(removeValue) {
-        if (removeValue < 0)
-            return;
-        const updatedHealth = this.health - removeValue;
-        this.health = updatedHealth < 0 ? 0 : updatedHealth;
     }
     static getInitialVerticalPosition(maxHeight) {
         return maxHeight - this.HEIGHT;
@@ -166,25 +162,60 @@ Player.MAX_HEALTH = 100;
 class Enemy extends MoveableEntity {
     constructor(initialVerticalPosition, initialHorizontalPosition, maxLeftPosition, maxRightPosition) {
         super(initialVerticalPosition, initialHorizontalPosition, Enemy.HEIGHT, Enemy.WIDTH);
+        this.MAX_HEALTH = 10;
+        this.BASE_COLOR = {
+            red: 117,
+            green: 27,
+            blue: 124,
+            brightness: 1,
+        };
+        this.HALF_DAMAGE_COLOR = {
+            red: 196,
+            green: 14,
+            blue: 64,
+            brightness: 1,
+        };
+        this.DANGER_COLOR = {
+            red: 255,
+            green: 0,
+            blue: 0,
+            brightness: 1,
+        };
         this.maxLeftPosition = 0;
         this.maxRightPosition = 0;
         this.nextVerticalPositonToMoveDown = 0;
         this.movementSpeed = 1;
+        this.currentColor = this.BASE_COLOR;
         this.maxLeftPosition = maxLeftPosition;
         this.maxRightPosition = maxRightPosition;
         this.nextVerticalPositonToMoveDown = initialVerticalPosition;
+        this.healthManagerService = new HealthManagerService(this.MAX_HEALTH);
         this.blaster = new Blaster(this.verticalPosition + Enemy.HEIGHT, initialHorizontalPosition, Enemy.WIDTH);
         this.blaster.shootDownwards();
     }
     draw() {
         this.updatePosition();
         const previousFillStyle = this.canvas.canvasContext.fillStyle;
-        this.canvas.canvasContext.fillStyle = Enemy.COLOR;
+        this.canvas.canvasContext.fillStyle = this.getRGBAColor();
         this.canvas.canvasContext.fillRect(this.horizontalPosition, this.verticalPosition, Enemy.WIDTH, Enemy.HEIGHT);
         this.canvas.canvasContext.fillStyle = previousFillStyle;
     }
     getNextShot() {
         return this.blaster.shoot();
+    }
+    getHealth() {
+        return this.healthManagerService.getHealth();
+    }
+    decrementHealth(removeValue) {
+        this.healthManagerService.decrementHealth(removeValue);
+        const halfHealth = Math.floor(this.MAX_HEALTH / 2);
+        const thirdHealth = Math.floor(this.MAX_HEALTH / 3);
+        if (this.healthManagerService.getHealth() <= halfHealth) {
+            this.currentColor = this.HALF_DAMAGE_COLOR;
+        }
+        else if (this.healthManagerService.getHealth() <= thirdHealth) {
+            this.currentColor = this.DANGER_COLOR;
+        }
     }
     updatePosition() {
         this.updateMoveLeft();
@@ -236,10 +267,12 @@ class Enemy extends MoveableEntity {
     setNextVerticalPositionToMoveDown() {
         this.nextVerticalPositonToMoveDown += Enemy.HEIGHT;
     }
+    getRGBAColor() {
+        return `rgba(${this.currentColor.red}, ${this.currentColor.green}, ${this.currentColor.blue}, ${this.currentColor.brightness})`;
+    }
 }
 Enemy.HEIGHT = 25;
 Enemy.WIDTH = 25;
-Enemy.COLOR = "purple";
 // @ts-nocheck
 class EnemyConstants {
 }
@@ -301,7 +334,7 @@ class EnemyGroup {
                 : newCoolDownPeriod;
         return this.enemies.splice(index, 1)[0];
     }
-    triggerEnemyToShoot() {
+    getNextShot() {
         if (this.enemies.length === 0)
             return null;
         const currentTime = Date.now();
@@ -397,10 +430,12 @@ class CollisionDetectionService {
         if (!object1 || !object2) {
             return false;
         }
-        if (object1.horizontalPosition + object1.WIDTH < object2.horizontalPosition) {
+        if (object1.horizontalPosition + object1.WIDTH <
+            object2.horizontalPosition) {
             return false;
         }
-        if (object2.horizontalPosition + object2.WIDTH < object1.horizontalPosition) {
+        if (object2.horizontalPosition + object2.WIDTH <
+            object1.horizontalPosition) {
             return false;
         }
         if (object1.verticalPosition + object1.HEIGHT < object2.verticalPosition) {
@@ -504,6 +539,22 @@ class HeadsUpDisplayService {
         const scoreBoundingContext = this.drawScoreService.drawScore(score);
         this.drawPlayerHealth.drawPlayerHealth(scoreBoundingContext.x, scoreBoundingContext.y + scoreBoundingContext.height, playerHealthPercentage);
         this.canvas.canvasContext.restore();
+    }
+}
+class HealthManagerService {
+    constructor(maxHealth) {
+        this.health = 0;
+        this.MAX_HEALTH = maxHealth;
+        this.health = maxHealth;
+    }
+    getHealth() {
+        return this.health;
+    }
+    decrementHealth(removeValue) {
+        if (removeValue < 0)
+            return;
+        const updatedHealth = this.health - removeValue;
+        this.health = updatedHealth < 0 ? 0 : updatedHealth;
     }
 }
 class Blaster {
@@ -624,13 +675,12 @@ class SpaceInvaders {
         this.canvas.canvasContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.removeCollidedBulletsAndEnemies();
         this.checkPlayerHit();
-        this.headsUpDisplay.draw(this.score, this.player.getHealth());
         this.enemyGroup.getEnemies().forEach((enemy) => enemy.draw());
-        this.addNextShot(this.enemyGroup.triggerEnemyToShoot(), this.enemyBulletArray);
+        this.addNextShot(this.enemyGroup.getNextShot(), this.enemyBulletArray);
         this.player.draw();
         this.addNextShot(this.player.getNextShot(), this.bulletArray);
-        this.renderBullets(this.enemyBulletArray);
-        this.renderBullets(this.bulletArray);
+        this.renderBullets([...this.enemyBulletArray, ...this.bulletArray]);
+        this.headsUpDisplay.draw(this.score, this.player.getHealth());
     }
     addNextShot(nextShot, bullets) {
         if (!nextShot)
@@ -644,62 +694,46 @@ class SpaceInvaders {
             deltaTimeMilliseconds <= this.renderMaximumMilliseconds);
     }
     renderBullets(bullets) {
-        let index = 0;
-        while (index < bullets.length) {
-            const currentBullet = bullets[index];
-            if (!currentBullet.isBulletOffScreen()) {
-                currentBullet.draw();
-                index++;
+        [...bullets].forEach((bullet, index) => {
+            if (!bullet.isBulletOffScreen()) {
+                bullet.draw();
             }
             else {
                 bullets.splice(index, 1);
             }
-        }
+        });
     }
     checkPlayerHit() {
         if (this.enemyBulletArray.length === 0)
             return;
-        let index = 0;
-        while (index < this.enemyBulletArray.length) {
-            const bullet = this.enemyBulletArray[index];
+        [...this.enemyBulletArray].forEach((bullet, index) => {
             const hasCollided = this.collisionDetector.hasCollided(bullet, this.player);
             if (hasCollided) {
                 this.enemyBulletArray.splice(index, 1);
                 this.player.decrementHealth(bullet.getDamageAmount());
             }
-            else {
-                index++;
-            }
-        }
+        });
     }
     removeCollidedBulletsAndEnemies() {
         if (this.bulletArray.length === 0)
             return;
-        let index = 0;
-        while (index < this.bulletArray.length) {
-            const removedEnemies = this.removeCollidedEnemy(this.bulletArray[index]);
-            if (0 < removedEnemies.length) {
+        [...this.bulletArray].forEach((bullet, index) => {
+            if (this.getCollidedEnemies(bullet)) {
                 this.bulletArray.splice(index, 1);
             }
-            else {
-                index++;
-            }
-        }
+        });
     }
-    removeCollidedEnemy(bullet) {
-        let index = 0;
-        const removedEnemies = [];
-        while (index < this.enemyGroup.getEnemies().length) {
-            const hasCollided = this.collisionDetector.hasCollided(bullet, this.enemyGroup.getEnemies()[index]);
-            if (hasCollided) {
-                const removedEnemy = this.enemyGroup.removeEnemy(index);
-                removedEnemies.push(removedEnemy);
-            }
-            else {
-                index++;
-            }
-        }
-        return removedEnemies;
+    getCollidedEnemies(bullet) {
+        let isCollisionDetected = false;
+        this.enemyGroup.getEnemies().forEach((enemy, index) => {
+            if (!this.collisionDetector.hasCollided(bullet, enemy))
+                return;
+            isCollisionDetected = true;
+            enemy.decrementHealth(bullet.getDamageAmount());
+            if (enemy.getHealth() <= 0)
+                this.enemyGroup.removeEnemy(index);
+        });
+        return isCollisionDetected;
     }
 }
 const spaceInvaders = new SpaceInvaders();
