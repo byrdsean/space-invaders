@@ -5,7 +5,8 @@ class Player extends MoveableEntity {
   private static COLOR = "green";
   private static MAX_HEALTH = 100;
 
-  private health: number = 0;
+  private readonly healthManagerService: HealthManagerService;
+
   private isShooting: boolean = false;
   private blaster: Blaster;
 
@@ -24,7 +25,7 @@ class Player extends MoveableEntity {
       this.horizontalPosition,
       Player.WIDTH
     );
-    this.health = Player.MAX_HEALTH;
+    this.healthManagerService = new HealthManagerService(Player.MAX_HEALTH);
   }
 
   reset() {
@@ -62,6 +63,14 @@ class Player extends MoveableEntity {
     return this.isShooting ? this.blaster.shoot() : null;
   }
 
+  getHealth(): number {
+    return this.healthManagerService.getHealth();
+  }
+
+  decrementHealth(removeValue: number) {
+    this.healthManagerService.decrementHealth(removeValue);
+  }
+
   startShooting() {
     this.isShooting = true;
   }
@@ -76,16 +85,6 @@ class Player extends MoveableEntity {
 
   decreaseRateOfFire() {
     this.blaster.decreaseRateOfFire();
-  }
-
-  getHealth(): number {
-    return this.health;
-  }
-
-  decrementHealth(removeValue: number) {
-    if(removeValue < 0) return;
-    const updatedHealth = this.health - removeValue;
-    this.health = updatedHealth < 0 ? 0 : updatedHealth;
   }
 
   static getInitialVerticalPosition(maxHeight: number): number {

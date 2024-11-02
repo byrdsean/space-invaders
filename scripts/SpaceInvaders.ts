@@ -51,19 +51,16 @@ class SpaceInvaders {
 
     this.removeCollidedBulletsAndEnemies();
     this.checkPlayerHit();
-    this.headsUpDisplay.draw(this.score, this.player.getHealth());
 
     this.enemyGroup.getEnemies().forEach((enemy) => enemy.draw());
-    this.addNextShot(
-      this.enemyGroup.triggerEnemyToShoot(),
-      this.enemyBulletArray
-    );
+    this.addNextShot(this.enemyGroup.getNextShot(), this.enemyBulletArray);
 
     this.player.draw();
     this.addNextShot(this.player.getNextShot(), this.bulletArray);
 
-    this.renderBullets(this.enemyBulletArray);
-    this.renderBullets(this.bulletArray);
+    this.renderBullets([...this.enemyBulletArray, ...this.bulletArray]);
+
+    this.headsUpDisplay.draw(this.score, this.player.getHealth());
   }
 
   private addNextShot(
@@ -86,65 +83,53 @@ class SpaceInvaders {
   }
 
   private renderBullets(bullets: BlasterBullet[]) {
-    let index = 0;
-    while (index < bullets.length) {
-      const currentBullet = bullets[index];
-      if (!currentBullet.isBulletOffScreen()) {
-        currentBullet.draw();
-        index++;
+    [...bullets].forEach((bullet, index) => {
+      if (!bullet.isBulletOffScreen()) {
+        bullet.draw();
       } else {
         bullets.splice(index, 1);
       }
-    }
+    });
   }
 
   private checkPlayerHit() {
     if (this.enemyBulletArray.length === 0) return;
 
-    let index = 0;
-    while (index < this.enemyBulletArray.length) {
-      const bullet = this.enemyBulletArray[index];
-      const hasCollided = this.collisionDetector.hasCollided(bullet, this.player);
-
+    [...this.enemyBulletArray].forEach((bullet, index) => {
+      const hasCollided = this.collisionDetector.hasCollided(
+        bullet,
+        this.player
+      );
       if (hasCollided) {
         this.enemyBulletArray.splice(index, 1);
         this.player.decrementHealth(bullet.getDamageAmount());
-      } else {
-        index++;
       }
-    }
+    });
   }
 
   private removeCollidedBulletsAndEnemies() {
     if (this.bulletArray.length === 0) return;
 
-    let index = 0;
-    while (index < this.bulletArray.length) {
-      const removedEnemies = this.removeCollidedEnemy(this.bulletArray[index]);
-      if (0 < removedEnemies.length) {
+    [...this.bulletArray].forEach((bullet, index) => {
+      if (this.getCollidedEnemies(bullet)) {
         this.bulletArray.splice(index, 1);
-      } else {
-        index++;
       }
-    }
+    });
   }
 
-  private removeCollidedEnemy(bullet: BlasterBullet): Enemy[] {
-    let index = 0;
-    const removedEnemies = [] as Enemy[];
-    while (index < this.enemyGroup.getEnemies().length) {
-      const hasCollided = this.collisionDetector.hasCollided(
-        bullet,
-        this.enemyGroup.getEnemies()[index]
-      );
-      if (hasCollided) {
-        const removedEnemy = this.enemyGroup.removeEnemy(index)!;
-        removedEnemies.push(removedEnemy);
-      } else {
-        index++;
-      }
-    }
-    return removedEnemies;
+  private getCollidedEnemies(bullet: BlasterBullet): boolean {
+    let isCollisionDetected = false;
+
+    this.enemyGroup.getEnemies().forEach((enemy, index) => {
+      if (!this.collisionDetector.hasCollided(bullet, enemy)) return;
+
+      isCollisionDetected = true;
+      enemy.decrementHealth(bullet.getDamageAmount());
+
+      if (enemy.getHealth() <= 0) this.enemyGroup.removeEnemy(index)!;
+    });
+
+    return isCollisionDetected;
   }
 }
 
