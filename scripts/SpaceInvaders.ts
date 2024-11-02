@@ -1,19 +1,23 @@
 class SpaceInvaders {
   private readonly FPS = 60;
 
+  private readonly canvas: Canvas;
+  private readonly player: Player;
+  private readonly enemyGroup: EnemyGroup;
+
+  private readonly keyboardControls: KeyboardControls;
+  private readonly collisionDetector: CollisionDetectionService;
+  private readonly headsUpDisplay: HeadsUpDisplayService;
+  private readonly gameSplashScreen: DrawGameSplashScreen;
+
+  private readonly renderMaximumMilliseconds: number;
+  private readonly renderMinimumMilliseconds: number;
+
   private lastTimestamp = 0;
   private score = 0;
   private bulletArray: BlasterBullet[] = [];
   private enemyBulletArray: BlasterBullet[] = [];
-
-  private readonly canvas: Canvas;
-  private readonly player: Player;
-  private readonly enemyGroup: EnemyGroup;
-  private readonly keyboardControls: KeyboardControls;
-  private readonly collisionDetector: CollisionDetectionService;
-  private readonly headsUpDisplay: HeadsUpDisplayService;
-  private readonly renderMaximumMilliseconds: number;
-  private readonly renderMinimumMilliseconds: number;
+  private gameStarted: Boolean = false;
 
   constructor() {
     const millisecondsPerFrame = 1000 / this.FPS;
@@ -31,24 +35,30 @@ class SpaceInvaders {
     this.player = new Player(playerVerticalPosition, playerHorizontalPosition);
     this.enemyGroup = new EnemyGroup();
 
-    this.keyboardControls = new KeyboardControls(this.player);
+    this.keyboardControls = new KeyboardControls(this.player, () => {
+      this.startGame();
+    });
     this.keyboardControls.addKeyDownControls();
     this.keyboardControls.addKeyUpControls();
 
     this.collisionDetector = new CollisionDetectionService();
     this.headsUpDisplay = new HeadsUpDisplayService();
+    this.gameSplashScreen = new DrawGameSplashScreen();
   }
 
   renderFrame(timestamp: number) {
     if (!this.shouldRenderFrame(timestamp)) return;
 
-    this.canvas.canvasContext.clearRect(
-      0,
-      0,
-      this.canvas.width,
-      this.canvas.height
-    );
+    const ctx = this.canvas.canvasContext;
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+    if (this.gameStarted) {
+      this.renderGamePlay();
+    } else {
+      this.gameSplashScreen.drawSplashScreen();
+    }
+  }
+  renderGamePlay() {
     this.removeCollidedBulletsAndEnemies();
     this.checkPlayerHit();
 
@@ -58,7 +68,8 @@ class SpaceInvaders {
     this.player.draw();
     this.addNextShot(this.player.getNextShot(), this.bulletArray);
 
-    this.renderBullets([...this.enemyBulletArray, ...this.bulletArray]);
+    this.showAndRemoveBullets(this.enemyBulletArray);
+    this.showAndRemoveBullets(this.bulletArray);
 
     this.headsUpDisplay.draw(this.score, this.player.getHealth());
   }
@@ -82,7 +93,7 @@ class SpaceInvaders {
     );
   }
 
-  private renderBullets(bullets: BlasterBullet[]) {
+  private showAndRemoveBullets(bullets: BlasterBullet[]) {
     [...bullets].forEach((bullet, index) => {
       if (!bullet.isBulletOffScreen()) {
         bullet.draw();
@@ -131,6 +142,10 @@ class SpaceInvaders {
 
     return isCollisionDetected;
   }
+
+  private startGame() {
+    this.gameStarted = true;
+  }
 }
 
 const spaceInvaders = new SpaceInvaders();
@@ -140,4 +155,4 @@ function animate(timestamp: number) {
   requestAnimationFrame(animate);
 }
 
-this.animate(0);
+animate(0);
