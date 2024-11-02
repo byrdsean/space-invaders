@@ -1,8 +1,10 @@
 class KeyboardControls {
   private readonly player: Player;
+  private readonly startGame: () => void;
 
-  constructor(player: Player) {
+  constructor(player: Player, startGame: () => void) {
     this.player = player;
+    this.startGame = startGame;
   }
 
   addKeyDownControls() {
@@ -38,6 +40,9 @@ class KeyboardControls {
           break;
         case "Space":
           this.player.stopShooting();
+          break;
+        case "Enter":
+          this.startGame();
           break;
       }
     });

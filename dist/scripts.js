@@ -20,6 +20,15 @@ class CanvasInstance {
 }
 CanvasInstance.GAME_SCREEN_ID = "game_screen";
 CanvasInstance.BORDER_WIDTH = 1;
+var _a;
+class FontHelper {
+    static getFontFamily(fontSize) {
+        return `${fontSize}px PressStart2P, Arial`;
+    }
+}
+_a = FontHelper;
+FontHelper.FONT_SIZE = 12;
+FontHelper.TITLE_FONT_SIZE = _a.FONT_SIZE * 3;
 class MathHelper {
     // This method was copied from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
     static getRandomInt(min, max) {
@@ -384,8 +393,9 @@ class EnemyGroup {
     }
 }
 class KeyboardControls {
-    constructor(player) {
+    constructor(player, startGame) {
         this.player = player;
+        this.startGame = startGame;
     }
     addKeyDownControls() {
         window.addEventListener("keydown", (e) => {
@@ -420,6 +430,9 @@ class KeyboardControls {
                 case "Space":
                     this.player.stopShooting();
                     break;
+                case "Enter":
+                    this.startGame();
+                    break;
             }
         });
     }
@@ -445,6 +458,41 @@ class CollisionDetectionService {
             return false;
         }
         return true;
+    }
+}
+class DrawGameSplashScreen {
+    constructor() {
+        this.BUFFER_SIZE_PIXELS = 20;
+        this.FONT_COLOR = "white";
+        this.GAME_TITLE = "SPACE INVADERS";
+        this.PRESS_ENTER = "Press ENTER to start";
+        this.canvas = CanvasInstance.getInstance();
+        this.canvas.canvasContext.fillStyle = this.FONT_COLOR;
+    }
+    drawSplashScreen() {
+        const titleBoundingContext = this.drawTitle();
+        this.drawText(this.PRESS_ENTER, titleBoundingContext.y +
+            titleBoundingContext.height +
+            this.BUFFER_SIZE_PIXELS, FontHelper.FONT_SIZE);
+    }
+    drawTitle() {
+        this.canvas.canvasContext.font = FontHelper.getFontFamily(FontHelper.TITLE_FONT_SIZE);
+        const measuredText = this.canvas.canvasContext.measureText(this.GAME_TITLE);
+        const xPosition = this.canvas.width / 2 - measuredText.width / 2;
+        const yPosition = this.canvas.height / 2 - FontHelper.TITLE_FONT_SIZE / 2;
+        this.canvas.canvasContext.fillText(this.GAME_TITLE, xPosition, yPosition);
+        return {
+            x: xPosition,
+            y: yPosition,
+            width: measuredText.width,
+            height: FontHelper.TITLE_FONT_SIZE,
+        };
+    }
+    drawText(text, startingYPosition, fontSize) {
+        this.canvas.canvasContext.font = FontHelper.getFontFamily(fontSize);
+        const measuredText = this.canvas.canvasContext.measureText(text);
+        const xPosition = this.canvas.width / 2 - measuredText.width / 2;
+        this.canvas.canvasContext.fillText(text, xPosition, startingYPosition);
     }
 }
 class DrawPlayerHealth {
@@ -504,10 +552,9 @@ class DrawPlayerHealth {
 }
 class DrawScoreService {
     constructor(bufferSize) {
-        this.FONT_SIZE_PIXELS = 12;
         this.FONT_COLOR = "white";
         this.canvas = CanvasInstance.getInstance();
-        this.fontFamily = `${this.FONT_SIZE_PIXELS}px \"Press Start 2P\", Arial`;
+        this.fontFamily = FontHelper.getFontFamily(FontHelper.FONT_SIZE);
         this.bufferSize = bufferSize;
     }
     drawScore(score) {
@@ -516,15 +563,15 @@ class DrawScoreService {
         const measuredText = this.canvas.canvasContext.measureText(scoreText);
         return {
             x: this.bufferSize,
-            y: this.FONT_SIZE_PIXELS + this.bufferSize,
+            y: FontHelper.FONT_SIZE + this.bufferSize,
             width: measuredText.width,
-            height: this.FONT_SIZE_PIXELS,
+            height: FontHelper.FONT_SIZE,
         };
     }
     drawTextToCanvas(scoreText) {
         this.canvas.canvasContext.fillStyle = this.FONT_COLOR;
         this.canvas.canvasContext.font = this.fontFamily;
-        this.canvas.canvasContext.fillText(scoreText, this.bufferSize, this.FONT_SIZE_PIXELS + this.bufferSize);
+        this.canvas.canvasContext.fillText(scoreText, this.bufferSize, FontHelper.FONT_SIZE + this.bufferSize);
     }
 }
 class HeadsUpDisplayService {
@@ -655,6 +702,7 @@ class SpaceInvaders {
         this.score = 0;
         this.bulletArray = [];
         this.enemyBulletArray = [];
+        this.gameStarted = false;
         const millisecondsPerFrame = 1000 / this.FPS;
         this.renderMaximumMilliseconds = Math.floor(millisecondsPerFrame) + 1;
         this.renderMinimumMilliseconds = Math.floor(millisecondsPerFrame) - 1;
@@ -663,23 +711,36 @@ class SpaceInvaders {
         const playerHorizontalPosition = Player.getInitialHorizontalPosition(this.canvas.height);
         this.player = new Player(playerVerticalPosition, playerHorizontalPosition);
         this.enemyGroup = new EnemyGroup();
-        this.keyboardControls = new KeyboardControls(this.player);
+        this.keyboardControls = new KeyboardControls(this.player, () => {
+            this.startGame();
+        });
         this.keyboardControls.addKeyDownControls();
         this.keyboardControls.addKeyUpControls();
         this.collisionDetector = new CollisionDetectionService();
         this.headsUpDisplay = new HeadsUpDisplayService();
+        this.gameSplashScreen = new DrawGameSplashScreen();
     }
     renderFrame(timestamp) {
         if (!this.shouldRenderFrame(timestamp))
             return;
-        this.canvas.canvasContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        const ctx = this.canvas.canvasContext;
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        if (this.gameStarted) {
+            this.renderGamePlay();
+        }
+        else {
+            this.gameSplashScreen.drawSplashScreen();
+        }
+    }
+    renderGamePlay() {
         this.removeCollidedBulletsAndEnemies();
         this.checkPlayerHit();
         this.enemyGroup.getEnemies().forEach((enemy) => enemy.draw());
         this.addNextShot(this.enemyGroup.getNextShot(), this.enemyBulletArray);
         this.player.draw();
         this.addNextShot(this.player.getNextShot(), this.bulletArray);
-        this.renderBullets([...this.enemyBulletArray, ...this.bulletArray]);
+        this.showAndRemoveBullets(this.enemyBulletArray);
+        this.showAndRemoveBullets(this.bulletArray);
         this.headsUpDisplay.draw(this.score, this.player.getHealth());
     }
     addNextShot(nextShot, bullets) {
@@ -693,7 +754,7 @@ class SpaceInvaders {
         return (this.renderMinimumMilliseconds <= deltaTimeMilliseconds &&
             deltaTimeMilliseconds <= this.renderMaximumMilliseconds);
     }
-    renderBullets(bullets) {
+    showAndRemoveBullets(bullets) {
         [...bullets].forEach((bullet, index) => {
             if (!bullet.isBulletOffScreen()) {
                 bullet.draw();
@@ -735,10 +796,13 @@ class SpaceInvaders {
         });
         return isCollisionDetected;
     }
+    startGame() {
+        this.gameStarted = true;
+    }
 }
 const spaceInvaders = new SpaceInvaders();
 function animate(timestamp) {
     spaceInvaders.renderFrame(timestamp);
     requestAnimationFrame(animate);
 }
-this.animate(0);
+animate(0);
