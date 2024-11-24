@@ -3,7 +3,6 @@ class Enemy extends MoveableEntity {
   public static HEIGHT = 25;
   public static WIDTH = 25;
 
-  private readonly MAX_HEALTH = 10;
   private readonly BASE_COLOR: ColorRGBA = {
     red: 117,
     green: 27,
@@ -25,6 +24,7 @@ class Enemy extends MoveableEntity {
 
   private readonly healthManagerService: HealthManagerService;
   private readonly blaster: Blaster;
+  private readonly pointsForDefeating: number;
 
   private maxLeftPosition = 0;
   private maxRightPosition = 0;
@@ -36,7 +36,8 @@ class Enemy extends MoveableEntity {
     initialVerticalPosition: number,
     initialHorizontalPosition: number,
     maxLeftPosition: number,
-    maxRightPosition: number
+    maxRightPosition: number,
+    config: EnemyConfig
   ) {
     super(
       initialVerticalPosition,
@@ -47,8 +48,9 @@ class Enemy extends MoveableEntity {
     this.maxLeftPosition = maxLeftPosition;
     this.maxRightPosition = maxRightPosition;
     this.nextVerticalPositonToMoveDown = initialVerticalPosition;
+    this.pointsForDefeating = config.pointsForDefeating;
 
-    this.healthManagerService = new HealthManagerService(this.MAX_HEALTH);
+    this.healthManagerService = new HealthManagerService(config.maxHealth);
 
     this.blaster = new Blaster(
       this.verticalPosition + Enemy.HEIGHT,
@@ -85,14 +87,20 @@ class Enemy extends MoveableEntity {
   decrementHealth(removeValue: number) {
     this.healthManagerService.decrementHealth(removeValue);
 
-    const halfHealth = Math.floor(this.MAX_HEALTH / 2);
-    const thirdHealth = Math.floor(this.MAX_HEALTH / 3);
+    const halfHealth = Math.floor(this.healthManagerService.getMaxHealth() / 2);
+    const thirdHealth = Math.floor(
+      this.healthManagerService.getMaxHealth() / 3
+    );
 
     if (this.healthManagerService.getHealth() <= halfHealth) {
       this.currentColor = this.HALF_DAMAGE_COLOR;
     } else if (this.healthManagerService.getHealth() <= thirdHealth) {
       this.currentColor = this.DANGER_COLOR;
     }
+  }
+
+  getPointsForDefeating(): number {
+    return this.pointsForDefeating;
   }
 
   private updatePosition() {

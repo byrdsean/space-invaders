@@ -1,3 +1,8 @@
+interface MaxPositionsToMove {
+  minLeftPositionToMove: number;
+  maxRightPositionToMove: number;
+}
+
 class EnemyGroup {
   private readonly ENEMY_SPACING = 5;
   private readonly MAX_COOLDOWN_PERIOD_MILLISECONDS = 2500;
@@ -50,7 +55,7 @@ class EnemyGroup {
   }
 
   private addEnemies() {
-    const levelData = EnemyConstants.levels.find(
+    const levelData = EnemyLevels.levels.find(
       (levelData) => levelData.level == this.currentLevel
     );
 
@@ -64,22 +69,14 @@ class EnemyGroup {
       const verticalPosition = rowIndex * (Enemy.HEIGHT + this.ENEMY_SPACING);
       const horizontalOffset = this.calculateRowOffset(row.length);
 
-      row.forEach((_, colIndex) => {
+      row.forEach((enemyType, colIndex) => {
         const horizontalPosition =
           colIndex * (Enemy.WIDTH + this.ENEMY_SPACING);
+        const { minLeftPositionToMove, maxRightPositionToMove } =
+          this.getMaxPositionsToMove(maxEnemiesInARow, row.length, colIndex);
 
-        const minLeftPositionToMove = this.calculateMinLeftPositionToMove(
-          maxEnemiesInARow,
-          row.length,
-          colIndex
-        );
-        const maxRightPositionToMove = this.calculateMaxRightPositionToMove(
-          maxEnemiesInARow,
-          row.length,
-          colIndex
-        );
-
-        const enemy = new Enemy(
+        const enemy = EnemyFactory.getInstance().buildNewEnemy(
+          enemyType,
           verticalPosition,
           horizontalPosition + horizontalOffset,
           minLeftPositionToMove,
@@ -90,6 +87,24 @@ class EnemyGroup {
         this.enemies.push(enemy);
       });
     });
+  }
+
+  private getMaxPositionsToMove(
+    maxEnemiesInARow: number,
+    rowLength: number,
+    enemyIndex: number
+  ): MaxPositionsToMove {
+    const minLeftPositionToMove = this.calculateMinLeftPositionToMove(
+      maxEnemiesInARow,
+      rowLength,
+      enemyIndex
+    );
+    const maxRightPositionToMove = this.calculateMaxRightPositionToMove(
+      maxEnemiesInARow,
+      rowLength,
+      enemyIndex
+    );
+    return { minLeftPositionToMove, maxRightPositionToMove };
   }
 
   private calculateMaxRightPositionToMove(
