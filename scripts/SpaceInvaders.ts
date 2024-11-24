@@ -137,7 +137,10 @@ class SpaceInvaders {
       isCollisionDetected = true;
       enemy.decrementHealth(bullet.getDamageAmount());
 
-      if (enemy.getHealth() <= 0) this.enemyGroup.removeEnemy(index)!;
+      if (enemy.getHealth() <= 0) {
+        const defeatedEnemy = this.enemyGroup.removeEnemy(index)!;
+        this.score += defeatedEnemy.getPointsForDefeating();
+      }
     });
 
     return isCollisionDetected;

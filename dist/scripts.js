@@ -169,9 +169,8 @@ Player.COLOR = "green";
 Player.MAX_HEALTH = 100;
 // @ts-ignore
 class Enemy extends MoveableEntity {
-    constructor(initialVerticalPosition, initialHorizontalPosition, maxLeftPosition, maxRightPosition) {
+    constructor(initialVerticalPosition, initialHorizontalPosition, maxLeftPosition, maxRightPosition, config) {
         super(initialVerticalPosition, initialHorizontalPosition, Enemy.HEIGHT, Enemy.WIDTH);
-        this.MAX_HEALTH = 10;
         this.BASE_COLOR = {
             red: 117,
             green: 27,
@@ -198,7 +197,8 @@ class Enemy extends MoveableEntity {
         this.maxLeftPosition = maxLeftPosition;
         this.maxRightPosition = maxRightPosition;
         this.nextVerticalPositonToMoveDown = initialVerticalPosition;
-        this.healthManagerService = new HealthManagerService(this.MAX_HEALTH);
+        this.pointsForDefeating = config.pointsForDefeating;
+        this.healthManagerService = new HealthManagerService(config.maxHealth);
         this.blaster = new Blaster(this.verticalPosition + Enemy.HEIGHT, initialHorizontalPosition, Enemy.WIDTH);
         this.blaster.shootDownwards();
     }
@@ -217,14 +217,17 @@ class Enemy extends MoveableEntity {
     }
     decrementHealth(removeValue) {
         this.healthManagerService.decrementHealth(removeValue);
-        const halfHealth = Math.floor(this.MAX_HEALTH / 2);
-        const thirdHealth = Math.floor(this.MAX_HEALTH / 3);
+        const halfHealth = Math.floor(this.healthManagerService.getMaxHealth() / 2);
+        const thirdHealth = Math.floor(this.healthManagerService.getMaxHealth() / 3);
         if (this.healthManagerService.getHealth() <= halfHealth) {
             this.currentColor = this.HALF_DAMAGE_COLOR;
         }
         else if (this.healthManagerService.getHealth() <= thirdHealth) {
             this.currentColor = this.DANGER_COLOR;
         }
+    }
+    getPointsForDefeating() {
+        return this.pointsForDefeating;
     }
     updatePosition() {
         this.updateMoveLeft();
@@ -282,41 +285,42 @@ class Enemy extends MoveableEntity {
 }
 Enemy.HEIGHT = 25;
 Enemy.WIDTH = 25;
-// @ts-nocheck
-class EnemyConstants {
+class EnemyFactory {
+    constructor() {
+        this.weakEnemyStats = {
+            maxHealth: 5,
+            pointsForDefeating: 1,
+        };
+        this.mediumEnemyStats = {
+            maxHealth: 15,
+            pointsForDefeating: 3,
+        };
+        this.strongEnemyStats = {
+            maxHealth: 30,
+            pointsForDefeating: 6,
+        };
+    }
+    static getInstance() {
+        if (!this.instance)
+            this.instance = new EnemyFactory();
+        return this.instance;
+    }
+    buildNewEnemy(enemyType, startingVerticalPosition, startingHorizontalPosition, minLeftPositionToMove, maxRightPositionToMove) {
+        const enemyConfig = this.getConfigForEnemyType(enemyType);
+        return new Enemy(startingVerticalPosition, startingHorizontalPosition, minLeftPositionToMove, maxRightPositionToMove, enemyConfig);
+    }
+    getConfigForEnemyType(enemyType) {
+        switch (enemyType) {
+            case EnemyType.MEDIUM:
+                return this.mediumEnemyStats;
+            case EnemyType.STRONG:
+                return this.strongEnemyStats;
+            case EnemyType.WEAK:
+            default:
+                return this.weakEnemyStats;
+        }
+    }
 }
-EnemyConstants.levels = [
-    {
-        level: 1,
-        enemies: [
-            [
-                EnemyType.WEAK,
-                EnemyType.WEAK,
-                EnemyType.WEAK,
-                EnemyType.WEAK,
-                EnemyType.WEAK,
-            ],
-            [EnemyType.WEAK, EnemyType.WEAK, EnemyType.WEAK],
-            [
-                EnemyType.WEAK,
-                EnemyType.WEAK,
-                EnemyType.WEAK,
-                EnemyType.WEAK,
-                EnemyType.WEAK,
-                EnemyType.WEAK,
-                EnemyType.WEAK,
-            ],
-            [
-                EnemyType.WEAK,
-                EnemyType.WEAK,
-                EnemyType.WEAK,
-                EnemyType.WEAK,
-                EnemyType.WEAK,
-            ],
-            [EnemyType.WEAK, EnemyType.WEAK, EnemyType.WEAK],
-        ],
-    },
-];
 class EnemyGroup {
     constructor() {
         this.ENEMY_SPACING = 5;
@@ -355,7 +359,7 @@ class EnemyGroup {
         return this.enemies[enemyIndex].getNextShot();
     }
     addEnemies() {
-        const levelData = EnemyConstants.levels.find((levelData) => levelData.level == this.currentLevel);
+        const levelData = EnemyLevels.levels.find((levelData) => levelData.level == this.currentLevel);
         if (!levelData)
             return;
         const maxEnemiesInARow = levelData.enemies
@@ -364,15 +368,19 @@ class EnemyGroup {
         levelData.enemies.forEach((row, rowIndex) => {
             const verticalPosition = rowIndex * (Enemy.HEIGHT + this.ENEMY_SPACING);
             const horizontalOffset = this.calculateRowOffset(row.length);
-            row.forEach((_, colIndex) => {
+            row.forEach((enemyType, colIndex) => {
                 const horizontalPosition = colIndex * (Enemy.WIDTH + this.ENEMY_SPACING);
-                const minLeftPositionToMove = this.calculateMinLeftPositionToMove(maxEnemiesInARow, row.length, colIndex);
-                const maxRightPositionToMove = this.calculateMaxRightPositionToMove(maxEnemiesInARow, row.length, colIndex);
-                const enemy = new Enemy(verticalPosition, horizontalPosition + horizontalOffset, minLeftPositionToMove, maxRightPositionToMove);
+                const { minLeftPositionToMove, maxRightPositionToMove } = this.getMaxPositionsToMove(maxEnemiesInARow, row.length, colIndex);
+                const enemy = EnemyFactory.getInstance().buildNewEnemy(enemyType, verticalPosition, horizontalPosition + horizontalOffset, minLeftPositionToMove, maxRightPositionToMove);
                 enemy.startMovingLeft();
                 this.enemies.push(enemy);
             });
         });
+    }
+    getMaxPositionsToMove(maxEnemiesInARow, rowLength, enemyIndex) {
+        const minLeftPositionToMove = this.calculateMinLeftPositionToMove(maxEnemiesInARow, rowLength, enemyIndex);
+        const maxRightPositionToMove = this.calculateMaxRightPositionToMove(maxEnemiesInARow, rowLength, enemyIndex);
+        return { minLeftPositionToMove, maxRightPositionToMove };
     }
     calculateMaxRightPositionToMove(maxEnemiesInARow, rowLength, enemyIndex) {
         const spacesToRight = (maxEnemiesInARow - rowLength) / 2 + (rowLength - enemyIndex - 1);
@@ -392,6 +400,134 @@ class EnemyGroup {
         return Math.floor(this.canvas.width / 2) - Math.floor(maxWidthOfRow / 2);
     }
 }
+// @ts-nocheck
+class EnemyLevels {
+}
+EnemyLevels.levels = [
+    {
+        level: 1,
+        enemies: [
+            [
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+            ],
+            [
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+            ],
+            [
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+            ],
+        ],
+    },
+    {
+        level: 2,
+        enemies: [
+            [
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+            ],
+            [
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+            ],
+            [
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+                EnemyType.WEAK,
+            ],
+        ],
+    },
+    {
+        level: 3,
+        enemies: [
+            [
+                EnemyType.STRONG,
+                EnemyType.STRONG,
+                EnemyType.STRONG,
+                EnemyType.STRONG,
+                EnemyType.STRONG,
+                EnemyType.STRONG,
+                EnemyType.STRONG,
+                EnemyType.STRONG,
+                EnemyType.STRONG,
+                EnemyType.STRONG,
+            ],
+            [
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+            ],
+            [
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+            ],
+        ],
+    },
+];
 class KeyboardControls {
     constructor(player, startGame) {
         this.player = player;
@@ -597,6 +733,9 @@ class HealthManagerService {
     getHealth() {
         return this.health;
     }
+    getMaxHealth() {
+        return this.MAX_HEALTH;
+    }
     decrementHealth(removeValue) {
         if (removeValue < 0)
             return;
@@ -694,7 +833,7 @@ class BlasterBullet extends MoveableEntity {
 }
 BlasterBullet.HEIGHT = 5;
 BlasterBullet.WIDTH = 5;
-BlasterBullet.DAMAGE = 10;
+BlasterBullet.DAMAGE = 5;
 class SpaceInvaders {
     constructor() {
         this.FPS = 60;
@@ -791,8 +930,10 @@ class SpaceInvaders {
                 return;
             isCollisionDetected = true;
             enemy.decrementHealth(bullet.getDamageAmount());
-            if (enemy.getHealth() <= 0)
-                this.enemyGroup.removeEnemy(index);
+            if (enemy.getHealth() <= 0) {
+                const defeatedEnemy = this.enemyGroup.removeEnemy(index);
+                this.score += defeatedEnemy.getPointsForDefeating();
+            }
         });
         return isCollisionDetected;
     }

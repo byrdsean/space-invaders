@@ -2,7 +2,7 @@
 class BlasterBullet extends MoveableEntity {
   public static HEIGHT = 5;
   public static WIDTH = 5;
-  private static DAMAGE = 10;
+  private static DAMAGE = 5;
   private readonly COLOR = "red";
 
   private readonly bulletSpeed: number;

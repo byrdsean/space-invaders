@@ -11,6 +11,10 @@ class HealthManagerService {
     return this.health;
   }
 
+  getMaxHealth(): number {
+    return this.MAX_HEALTH;
+  }
+
   decrementHealth(removeValue: number) {
     if (removeValue < 0) return;
     const updatedHealth = this.health - removeValue;
