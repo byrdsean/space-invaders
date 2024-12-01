@@ -8,6 +8,7 @@ class SpaceInvaders {
   private readonly keyboardControls: KeyboardControls;
   private readonly collisionDetector: CollisionDetectionService;
   private readonly headsUpDisplay: HeadsUpDisplayService;
+  private readonly levelService: LevelService;
   private readonly gameSplashScreen: DrawGameSplashScreen;
 
   private readonly renderMaximumMilliseconds: number;
@@ -44,6 +45,7 @@ class SpaceInvaders {
     this.collisionDetector = new CollisionDetectionService();
     this.headsUpDisplay = new HeadsUpDisplayService();
     this.gameSplashScreen = new DrawGameSplashScreen();
+    this.levelService = new LevelService();
   }
 
   renderFrame(timestamp: number) {
@@ -52,12 +54,26 @@ class SpaceInvaders {
     const ctx = this.canvas.canvasContext;
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    if (this.gameStarted) {
-      this.renderGamePlay();
-    } else {
+    if (!this.gameStarted) {
       this.gameSplashScreen.drawSplashScreen();
+      return;
+    }
+
+    if (this.levelService.isShowingNextLevelScreen()) {
+      this.levelService.drawNextLevelScreen();
+      return;
+    }
+
+    if (this.enemyGroup.hasEnemies()) {
+      this.renderGamePlay();
+    } else if (!this.levelService.hasRemainingLevels()) {
+      //TODO - implement game over - player won
+      console.log("game over");
+    } else {
+      this.startNextLevel();
     }
   }
+
   renderGamePlay() {
     this.removeCollidedBulletsAndEnemies();
     this.checkPlayerHit();
@@ -71,7 +87,22 @@ class SpaceInvaders {
     this.showAndRemoveBullets(this.enemyBulletArray);
     this.showAndRemoveBullets(this.bulletArray);
 
-    this.headsUpDisplay.draw(this.score, this.player.getHealth());
+    this.headsUpDisplay.draw(
+      this.score,
+      this.levelService.getCurrentLevel(),
+      this.player.getHealth()
+    );
+  }
+
+  private startNextLevel() {
+    this.bulletArray.length = 0;
+    this.enemyBulletArray.length = 0;
+    this.player.reset();
+
+    const enemiesForNextLevel = this.levelService.startNextLevel();
+    if (!enemiesForNextLevel) return;
+
+    this.enemyGroup.addEnemies(enemiesForNextLevel);
   }
 
   private addNextShot(
@@ -129,21 +160,23 @@ class SpaceInvaders {
   }
 
   private getCollidedEnemies(bullet: BlasterBullet): boolean {
-    let isCollisionDetected = false;
+    return this.enemyGroup
+      .getEnemies()
+      .map((enemy, index) => {
+        if (!this.collisionDetector.hasCollided(bullet, enemy)) {
+          return false;
+        }
 
-    this.enemyGroup.getEnemies().forEach((enemy, index) => {
-      if (!this.collisionDetector.hasCollided(bullet, enemy)) return;
+        enemy.decrementHealth(bullet.getDamageAmount());
 
-      isCollisionDetected = true;
-      enemy.decrementHealth(bullet.getDamageAmount());
+        if (enemy.getHealth() <= 0) {
+          this.enemyGroup.removeEnemy(index)!;
+          this.score += enemy.getPointsForDefeating();
+        }
 
-      if (enemy.getHealth() <= 0) {
-        const defeatedEnemy = this.enemyGroup.removeEnemy(index)!;
-        this.score += defeatedEnemy.getPointsForDefeating();
-      }
-    });
-
-    return isCollisionDetected;
+        return true;
+      })
+      .includes(true);
   }
 
   private startGame() {

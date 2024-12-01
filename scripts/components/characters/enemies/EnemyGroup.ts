@@ -11,14 +11,16 @@ class EnemyGroup {
   private readonly canvas: Canvas;
 
   private enemies: Enemy[] = [];
-  private currentLevel = 1;
   private timeLastShotFired = 0;
 
   private cooldownPeriod = this.MAX_COOLDOWN_PERIOD_MILLISECONDS;
 
   constructor() {
     this.canvas = CanvasInstance.getInstance();
-    this.addEnemies();
+  }
+
+  hasEnemies(): boolean {
+    return this.enemies.length > 0;
   }
 
   getEnemies(): Enemy[] {
@@ -39,33 +41,14 @@ class EnemyGroup {
     return this.enemies.splice(index, 1)[0];
   }
 
-  getNextShot(): BlasterBullet | null {
-    if (this.enemies.length === 0) return null;
+  addEnemies(enemies: EnemyType[][]) {
+    if (!enemies || enemies.length === 0) return;
 
-    const currentTime = Date.now();
-    const shouldFire =
-      currentTime - this.timeLastShotFired >= this.cooldownPeriod;
-
-    if (!shouldFire) return null;
-
-    this.timeLastShotFired = currentTime;
-
-    const enemyIndex = MathHelper.getRandomInt(0, this.enemies.length);
-    return this.enemies[enemyIndex].getNextShot();
-  }
-
-  private addEnemies() {
-    const levelData = EnemyLevels.levels.find(
-      (levelData) => levelData.level == this.currentLevel
-    );
-
-    if (!levelData) return;
-
-    const maxEnemiesInARow = levelData.enemies
+    const maxEnemiesInARow = enemies
       .map((enemyList) => enemyList.length)
       .reduce((acc, length) => Math.max(acc, length), 0);
 
-    levelData.enemies.forEach((row, rowIndex) => {
+    enemies.forEach((row, rowIndex) => {
       const verticalPosition = rowIndex * (Enemy.HEIGHT + this.ENEMY_SPACING);
       const horizontalOffset = this.calculateRowOffset(row.length);
 
@@ -87,6 +70,21 @@ class EnemyGroup {
         this.enemies.push(enemy);
       });
     });
+  }
+
+  getNextShot(): BlasterBullet | null {
+    if (this.enemies.length === 0) return null;
+
+    const currentTime = Date.now();
+    const shouldFire =
+      currentTime - this.timeLastShotFired >= this.cooldownPeriod;
+
+    if (!shouldFire) return null;
+
+    this.timeLastShotFired = currentTime;
+
+    const enemyIndex = MathHelper.getRandomInt(0, this.enemies.length);
+    return this.enemies[enemyIndex].getNextShot();
   }
 
   private getMaxPositionsToMove(
