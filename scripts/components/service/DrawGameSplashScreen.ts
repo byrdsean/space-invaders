@@ -22,7 +22,7 @@ class DrawGameSplashScreen {
     );
   }
 
-  drawTitle(): BoundingContext {
+  private drawTitle(): BoundingContext {
     this.canvas.canvasContext.font = FontHelper.getFontFamily(
       FontHelper.TITLE_FONT_SIZE
     );
@@ -43,7 +43,7 @@ class DrawGameSplashScreen {
     };
   }
 
-  drawText(text: string, startingYPosition: number, fontSize: number) {
+  private drawText(text: string, startingYPosition: number, fontSize: number) {
     this.canvas.canvasContext.font = FontHelper.getFontFamily(fontSize);
 
     const measuredText: TextMetrics =

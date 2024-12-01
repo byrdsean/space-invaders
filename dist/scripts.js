@@ -328,11 +328,12 @@ class EnemyGroup {
         this.MIN_COOLDOWN_PERIOD_MILLISECONDS = 500;
         this.CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS = 200;
         this.enemies = [];
-        this.currentLevel = 1;
         this.timeLastShotFired = 0;
         this.cooldownPeriod = this.MAX_COOLDOWN_PERIOD_MILLISECONDS;
         this.canvas = CanvasInstance.getInstance();
-        this.addEnemies();
+    }
+    hasEnemies() {
+        return this.enemies.length > 0;
     }
     getEnemies() {
         return [...this.enemies];
@@ -347,25 +348,13 @@ class EnemyGroup {
                 : newCoolDownPeriod;
         return this.enemies.splice(index, 1)[0];
     }
-    getNextShot() {
-        if (this.enemies.length === 0)
-            return null;
-        const currentTime = Date.now();
-        const shouldFire = currentTime - this.timeLastShotFired >= this.cooldownPeriod;
-        if (!shouldFire)
-            return null;
-        this.timeLastShotFired = currentTime;
-        const enemyIndex = MathHelper.getRandomInt(0, this.enemies.length);
-        return this.enemies[enemyIndex].getNextShot();
-    }
-    addEnemies() {
-        const levelData = EnemyLevels.levels.find((levelData) => levelData.level == this.currentLevel);
-        if (!levelData)
+    addEnemies(enemies) {
+        if (!enemies || enemies.length === 0)
             return;
-        const maxEnemiesInARow = levelData.enemies
+        const maxEnemiesInARow = enemies
             .map((enemyList) => enemyList.length)
             .reduce((acc, length) => Math.max(acc, length), 0);
-        levelData.enemies.forEach((row, rowIndex) => {
+        enemies.forEach((row, rowIndex) => {
             const verticalPosition = rowIndex * (Enemy.HEIGHT + this.ENEMY_SPACING);
             const horizontalOffset = this.calculateRowOffset(row.length);
             row.forEach((enemyType, colIndex) => {
@@ -376,6 +365,17 @@ class EnemyGroup {
                 this.enemies.push(enemy);
             });
         });
+    }
+    getNextShot() {
+        if (this.enemies.length === 0)
+            return null;
+        const currentTime = Date.now();
+        const shouldFire = currentTime - this.timeLastShotFired >= this.cooldownPeriod;
+        if (!shouldFire)
+            return null;
+        this.timeLastShotFired = currentTime;
+        const enemyIndex = MathHelper.getRandomInt(0, this.enemies.length);
+        return this.enemies[enemyIndex].getNextShot();
     }
     getMaxPositionsToMove(maxEnemiesInARow, rowLength, enemyIndex) {
         const minLeftPositionToMove = this.calculateMinLeftPositionToMove(maxEnemiesInARow, rowLength, enemyIndex);
@@ -631,6 +631,33 @@ class DrawGameSplashScreen {
         this.canvas.canvasContext.fillText(text, xPosition, startingYPosition);
     }
 }
+class DrawMetricsService {
+    constructor(bufferSize) {
+        this.FONT_COLOR = "white";
+        this.canvas = CanvasInstance.getInstance();
+        this.fontFamily = FontHelper.getFontFamily(FontHelper.FONT_SIZE);
+        this.bufferSize = bufferSize;
+    }
+    drawMetrics(score, level) {
+        const scoreBoundingContext = this.writeText(`Score: ${score}`, this.bufferSize, FontHelper.FONT_SIZE + this.bufferSize);
+        return this.writeText(`Level: ${level}`, scoreBoundingContext.x, FontHelper.FONT_SIZE + scoreBoundingContext.y);
+    }
+    writeText(text, horizontalOffset, verticalOffset) {
+        this.drawTextToCanvas(text, horizontalOffset, verticalOffset);
+        const measuredText = this.canvas.canvasContext.measureText(text);
+        return {
+            x: horizontalOffset,
+            y: verticalOffset + this.bufferSize,
+            width: measuredText.width,
+            height: FontHelper.FONT_SIZE,
+        };
+    }
+    drawTextToCanvas(scoreText, horizontalOffset, verticalOffset) {
+        this.canvas.canvasContext.fillStyle = this.FONT_COLOR;
+        this.canvas.canvasContext.font = this.fontFamily;
+        this.canvas.canvasContext.fillText(scoreText, horizontalOffset, verticalOffset);
+    }
+}
 class DrawPlayerHealth {
     constructor() {
         this.HEALTH_BAR_COLOR = "white";
@@ -686,41 +713,17 @@ class DrawPlayerHealth {
         this.canvas.canvasContext.fillRect(xPosition, yPosition, this.HEALTH_BAR_DIVET_WIDTH, this.HEALTH_BAR_DIVET_HEIGHT);
     }
 }
-class DrawScoreService {
-    constructor(bufferSize) {
-        this.FONT_COLOR = "white";
-        this.canvas = CanvasInstance.getInstance();
-        this.fontFamily = FontHelper.getFontFamily(FontHelper.FONT_SIZE);
-        this.bufferSize = bufferSize;
-    }
-    drawScore(score) {
-        const scoreText = `Score: ${score}`;
-        this.drawTextToCanvas(scoreText);
-        const measuredText = this.canvas.canvasContext.measureText(scoreText);
-        return {
-            x: this.bufferSize,
-            y: FontHelper.FONT_SIZE + this.bufferSize,
-            width: measuredText.width,
-            height: FontHelper.FONT_SIZE,
-        };
-    }
-    drawTextToCanvas(scoreText) {
-        this.canvas.canvasContext.fillStyle = this.FONT_COLOR;
-        this.canvas.canvasContext.font = this.fontFamily;
-        this.canvas.canvasContext.fillText(scoreText, this.bufferSize, FontHelper.FONT_SIZE + this.bufferSize);
-    }
-}
 class HeadsUpDisplayService {
     constructor() {
         this.BUFFER_SIZE_PIXELS = 10;
         this.canvas = CanvasInstance.getInstance();
-        this.drawScoreService = new DrawScoreService(this.BUFFER_SIZE_PIXELS);
+        this.drawMetricsService = new DrawMetricsService(this.BUFFER_SIZE_PIXELS);
         this.drawPlayerHealth = new DrawPlayerHealth();
     }
-    draw(score, playerHealthPercentage) {
+    draw(score, level, playerHealthPercentage) {
         this.canvas.canvasContext.save();
-        const scoreBoundingContext = this.drawScoreService.drawScore(score);
-        this.drawPlayerHealth.drawPlayerHealth(scoreBoundingContext.x, scoreBoundingContext.y + scoreBoundingContext.height, playerHealthPercentage);
+        const scoreBoundingContext = this.drawMetricsService.drawMetrics(score, level);
+        this.drawPlayerHealth.drawPlayerHealth(scoreBoundingContext.x, scoreBoundingContext.y, playerHealthPercentage);
         this.canvas.canvasContext.restore();
     }
 }
@@ -741,6 +744,86 @@ class HealthManagerService {
             return;
         const updatedHealth = this.health - removeValue;
         this.health = updatedHealth < 0 ? 0 : updatedHealth;
+    }
+}
+class LevelService {
+    constructor() {
+        this.COUNTDOWN_MAX = 3;
+        this.COUNTDOWN_TIME_MILLISECONDS = 1000;
+        this.BUFFER_SIZE_PIXELS = 20;
+        this.FONT_COLOR = "white";
+        this.NEXT_LEVEL_TITLE = "Next Level";
+        this.STARTING_IN_TITLE = "Starting in";
+        this.currentLevel = 0;
+        this.levels = [];
+        this.currentCountDown = this.COUNTDOWN_MAX;
+        this.canvas = CanvasInstance.getInstance();
+        this.canvas.canvasContext.fillStyle = this.FONT_COLOR;
+        EnemyLevels.levels
+            .map((level) => level.level)
+            .sort()
+            .forEach((level) => this.levels.push(level));
+    }
+    getCurrentLevel() {
+        return this.currentLevel;
+    }
+    hasRemainingLevels() {
+        return this.levels.length > 0;
+    }
+    isShowingNextLevelScreen() {
+        return this.startCountDownTime !== undefined;
+    }
+    startNextLevel() {
+        if (!this.hasRemainingLevels())
+            return;
+        this.currentLevel = this.levels.shift();
+        this.startCountDownTime = Date.now();
+        const enemiesForCurrentLevel = EnemyLevels.levels.find((level) => level.level === this.currentLevel);
+        return enemiesForCurrentLevel?.enemies;
+    }
+    drawNextLevelScreen() {
+        if (!this.shouldRenderLevelScreen())
+            return;
+        const nextLevelBoundingContext = this.drawNextLevelMessage();
+        const countdownText = `${this.STARTING_IN_TITLE}: ${this.currentCountDown}`;
+        this.drawText(countdownText, nextLevelBoundingContext.y +
+            nextLevelBoundingContext.height +
+            this.BUFFER_SIZE_PIXELS, FontHelper.FONT_SIZE);
+    }
+    shouldRenderLevelScreen() {
+        const currentTime = Date.now();
+        const shouldDecrementCountDown = this.startCountDownTime &&
+            currentTime - this.startCountDownTime >= this.COUNTDOWN_TIME_MILLISECONDS;
+        if (shouldDecrementCountDown) {
+            this.currentCountDown--;
+            this.startCountDownTime = currentTime;
+        }
+        if (this.currentCountDown <= 0) {
+            this.currentCountDown = this.COUNTDOWN_MAX;
+            this.startCountDownTime = undefined;
+            return false;
+        }
+        return true;
+    }
+    drawNextLevelMessage() {
+        this.canvas.canvasContext.font = FontHelper.getFontFamily(FontHelper.TITLE_FONT_SIZE);
+        const text = `${this.NEXT_LEVEL_TITLE}: ${this.currentLevel}`;
+        const measuredText = this.canvas.canvasContext.measureText(text);
+        const xPosition = this.canvas.width / 2 - measuredText.width / 2;
+        const yPosition = this.canvas.height / 2 - FontHelper.TITLE_FONT_SIZE / 2;
+        this.canvas.canvasContext.fillText(text, xPosition, yPosition);
+        return {
+            x: xPosition,
+            y: yPosition,
+            width: measuredText.width,
+            height: FontHelper.TITLE_FONT_SIZE,
+        };
+    }
+    drawText(text, startingYPosition, fontSize) {
+        this.canvas.canvasContext.font = FontHelper.getFontFamily(fontSize);
+        const measuredText = this.canvas.canvasContext.measureText(text);
+        const xPosition = this.canvas.width / 2 - measuredText.width / 2;
+        this.canvas.canvasContext.fillText(text, xPosition, startingYPosition);
     }
 }
 class Blaster {
@@ -858,17 +941,30 @@ class SpaceInvaders {
         this.collisionDetector = new CollisionDetectionService();
         this.headsUpDisplay = new HeadsUpDisplayService();
         this.gameSplashScreen = new DrawGameSplashScreen();
+        this.levelService = new LevelService();
     }
     renderFrame(timestamp) {
         if (!this.shouldRenderFrame(timestamp))
             return;
         const ctx = this.canvas.canvasContext;
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        if (this.gameStarted) {
+        if (!this.gameStarted) {
+            this.gameSplashScreen.drawSplashScreen();
+            return;
+        }
+        if (this.levelService.isShowingNextLevelScreen()) {
+            this.levelService.drawNextLevelScreen();
+            return;
+        }
+        if (this.enemyGroup.hasEnemies()) {
             this.renderGamePlay();
         }
+        else if (!this.levelService.hasRemainingLevels()) {
+            //TODO - implement game over - player won
+            console.log("game over");
+        }
         else {
-            this.gameSplashScreen.drawSplashScreen();
+            this.startNextLevel();
         }
     }
     renderGamePlay() {
@@ -880,7 +976,16 @@ class SpaceInvaders {
         this.addNextShot(this.player.getNextShot(), this.bulletArray);
         this.showAndRemoveBullets(this.enemyBulletArray);
         this.showAndRemoveBullets(this.bulletArray);
-        this.headsUpDisplay.draw(this.score, this.player.getHealth());
+        this.headsUpDisplay.draw(this.score, this.levelService.getCurrentLevel(), this.player.getHealth());
+    }
+    startNextLevel() {
+        this.bulletArray.length = 0;
+        this.enemyBulletArray.length = 0;
+        this.player.reset();
+        const enemiesForNextLevel = this.levelService.startNextLevel();
+        if (!enemiesForNextLevel)
+            return;
+        this.enemyGroup.addEnemies(enemiesForNextLevel);
     }
     addNextShot(nextShot, bullets) {
         if (!nextShot)
@@ -924,18 +1029,20 @@ class SpaceInvaders {
         });
     }
     getCollidedEnemies(bullet) {
-        let isCollisionDetected = false;
-        this.enemyGroup.getEnemies().forEach((enemy, index) => {
-            if (!this.collisionDetector.hasCollided(bullet, enemy))
-                return;
-            isCollisionDetected = true;
+        return this.enemyGroup
+            .getEnemies()
+            .map((enemy, index) => {
+            if (!this.collisionDetector.hasCollided(bullet, enemy)) {
+                return false;
+            }
             enemy.decrementHealth(bullet.getDamageAmount());
             if (enemy.getHealth() <= 0) {
-                const defeatedEnemy = this.enemyGroup.removeEnemy(index);
-                this.score += defeatedEnemy.getPointsForDefeating();
+                this.enemyGroup.removeEnemy(index);
+                this.score += enemy.getPointsForDefeating();
             }
-        });
-        return isCollisionDetected;
+            return true;
+        })
+            .includes(true);
     }
     startGame() {
         this.gameStarted = true;
