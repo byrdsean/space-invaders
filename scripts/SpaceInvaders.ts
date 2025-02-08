@@ -10,6 +10,7 @@ class SpaceInvaders {
   private readonly headsUpDisplay: HeadsUpDisplayService;
   private readonly levelService: LevelService;
   private readonly gameSplashScreen: DrawGameSplashScreen;
+  private readonly gameOverSplashScreen: GameOverSplashScreen;
 
   private readonly renderMaximumMilliseconds: number;
   private readonly renderMinimumMilliseconds: number;
@@ -45,6 +46,7 @@ class SpaceInvaders {
     this.collisionDetector = new CollisionDetectionService();
     this.headsUpDisplay = new HeadsUpDisplayService();
     this.gameSplashScreen = new DrawGameSplashScreen();
+    this.gameOverSplashScreen = new GameOverSplashScreen();
     this.levelService = new LevelService();
   }
 
@@ -67,8 +69,7 @@ class SpaceInvaders {
     if (this.enemyGroup.hasEnemies()) {
       this.renderGamePlay();
     } else if (!this.levelService.hasRemainingLevels()) {
-      //TODO - implement game over - player won
-      console.log("game over");
+      this.gameOverSplashScreen.drawSplashScreen();
     } else {
       this.startNextLevel();
     }
