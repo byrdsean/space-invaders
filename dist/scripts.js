@@ -713,6 +713,24 @@ class DrawPlayerHealth {
         this.canvas.canvasContext.fillRect(xPosition, yPosition, this.HEALTH_BAR_DIVET_WIDTH, this.HEALTH_BAR_DIVET_HEIGHT);
     }
 }
+class GameOverSplashScreen {
+    constructor() {
+        this.FONT_COLOR = "white";
+        this.GAME_OVER_MESSAGE = "Game over";
+        this.canvas = CanvasInstance.getInstance();
+        this.canvas.canvasContext.fillStyle = this.FONT_COLOR;
+    }
+    drawSplashScreen() {
+        this.drawTitle();
+    }
+    drawTitle() {
+        this.canvas.canvasContext.font = FontHelper.getFontFamily(FontHelper.TITLE_FONT_SIZE);
+        const measuredText = this.canvas.canvasContext.measureText(this.GAME_OVER_MESSAGE);
+        const xPosition = this.canvas.width / 2 - measuredText.width / 2;
+        const yPosition = this.canvas.height / 2 - FontHelper.TITLE_FONT_SIZE / 2;
+        this.canvas.canvasContext.fillText(this.GAME_OVER_MESSAGE, xPosition, yPosition);
+    }
+}
 class HeadsUpDisplayService {
     constructor() {
         this.BUFFER_SIZE_PIXELS = 10;
@@ -941,6 +959,7 @@ class SpaceInvaders {
         this.collisionDetector = new CollisionDetectionService();
         this.headsUpDisplay = new HeadsUpDisplayService();
         this.gameSplashScreen = new DrawGameSplashScreen();
+        this.gameOverSplashScreen = new GameOverSplashScreen();
         this.levelService = new LevelService();
     }
     renderFrame(timestamp) {
@@ -960,8 +979,7 @@ class SpaceInvaders {
             this.renderGamePlay();
         }
         else if (!this.levelService.hasRemainingLevels()) {
-            //TODO - implement game over - player won
-            console.log("game over");
+            this.gameOverSplashScreen.drawSplashScreen();
         }
         else {
             this.startNextLevel();
