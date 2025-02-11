@@ -107,7 +107,8 @@ class MoveableEntity {
 class Player extends MoveableEntity {
     constructor(initialVerticalPosition, initialHorizontalPosition) {
         super(initialVerticalPosition, initialHorizontalPosition, Player.HEIGHT, Player.WIDTH);
-        this.spacesToMove = 2;
+        this.SPACES_TO_MOVE = 2;
+        this.MAX_VERTICAL_SPACES_TO_MOVE = 75;
         this.isShooting = false;
         this.blaster = new Blaster(this.verticalPosition, this.horizontalPosition, Player.WIDTH);
         this.healthManagerService = new HealthManagerService(Player.MAX_HEALTH);
@@ -119,7 +120,8 @@ class Player extends MoveableEntity {
         this.blaster = new Blaster(this.verticalPosition, this.horizontalPosition, Player.WIDTH);
     }
     draw() {
-        this.updatePosition();
+        this.updateHorizontalPosition();
+        this.updateVerticalPosition();
         const previousFillStyle = this.canvas.canvasContext.fillStyle;
         this.canvas.canvasContext.fillStyle = Player.COLOR;
         this.canvas.canvasContext.fillRect(this.horizontalPosition, this.verticalPosition, Player.WIDTH, Player.HEIGHT);
@@ -140,28 +142,49 @@ class Player extends MoveableEntity {
     stopShooting() {
         this.isShooting = false;
     }
-    increaseRateOfFire() {
-        this.blaster.increaseRateOfFire();
-    }
-    decreaseRateOfFire() {
-        this.blaster.decreaseRateOfFire();
-    }
+    // increaseRateOfFire() {
+    //   this.blaster.increaseRateOfFire();
+    // }
+    // decreaseRateOfFire() {
+    //   this.blaster.decreaseRateOfFire();
+    // }
     static getInitialVerticalPosition(maxHeight) {
         return maxHeight - this.HEIGHT;
     }
     static getInitialHorizontalPosition(maxWidth) {
         return Math.floor(maxWidth / 2 - this.WIDTH / 2);
     }
-    updatePosition() {
+    updateHorizontalPosition() {
         if (this.isMovingLeft) {
-            this.moveLeft(this.spacesToMove);
+            this.moveLeft(this.SPACES_TO_MOVE);
         }
         else if (this.isMovingRight) {
-            this.moveRight(this.spacesToMove);
+            this.moveRight(this.SPACES_TO_MOVE);
         }
         if (this.isMovingLeft || this.isMovingRight) {
             this.blaster.updateBlasterHorizontalPosition(this.horizontalPosition);
         }
+    }
+    updateVerticalPosition() {
+        if (this.isMovingUp) {
+            this.moveUp(this.SPACES_TO_MOVE);
+        }
+        else if (this.isMovingDown) {
+            this.moveDown(this.SPACES_TO_MOVE);
+        }
+        if (this.isMovingUp || this.isMovingDown) {
+            this.blaster.updateBlasterVerticalPosition(this.verticalPosition);
+        }
+    }
+    moveDown(unitsToMove) {
+        const newVerticalPosition = this.verticalPosition + unitsToMove;
+        const maxDownPosition = this.canvas.height - this.HEIGHT;
+        this.verticalPosition = Math.min(newVerticalPosition, maxDownPosition);
+    }
+    moveUp(unitsToMove) {
+        const newVerticalPosition = this.verticalPosition - unitsToMove;
+        const maxUpwardPosition = this.canvas.height - this.MAX_VERTICAL_SPACES_TO_MOVE;
+        this.verticalPosition = Math.max(newVerticalPosition, maxUpwardPosition);
     }
 }
 Player.HEIGHT = 25;
@@ -543,6 +566,12 @@ class KeyboardControls {
                 case "ArrowRight":
                     this.player.startMovingRight();
                     break;
+                case "ArrowUp":
+                    this.player.startMovingUp();
+                    break;
+                case "ArrowDown":
+                    this.player.startMovingDown();
+                    break;
                 case "Space":
                     this.player.startShooting();
                     break;
@@ -559,10 +588,10 @@ class KeyboardControls {
                     this.player.stopMovingRight();
                     break;
                 case "ArrowUp":
-                    this.player.increaseRateOfFire();
+                    this.player.stopMovingUp();
                     break;
                 case "ArrowDown":
-                    this.player.decreaseRateOfFire();
+                    this.player.stopMovingDown();
                     break;
                 case "Space":
                     this.player.stopShooting();

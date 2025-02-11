@@ -5,7 +5,8 @@ class Player extends MoveableEntity {
   private static COLOR = "green";
   private static MAX_HEALTH = 100;
 
-  private readonly spacesToMove = 2;
+  private readonly SPACES_TO_MOVE = 2;
+  private readonly MAX_VERTICAL_SPACES_TO_MOVE = 75;
   private readonly healthManagerService: HealthManagerService;
 
   private isShooting: boolean = false;
@@ -45,7 +46,8 @@ class Player extends MoveableEntity {
   }
 
   override draw() {
-    this.updatePosition();
+    this.updateHorizontalPosition();
+    this.updateVerticalPosition();
 
     const previousFillStyle = this.canvas.canvasContext.fillStyle;
 
@@ -80,13 +82,15 @@ class Player extends MoveableEntity {
     this.isShooting = false;
   }
 
-  increaseRateOfFire() {
-    this.blaster.increaseRateOfFire();
-  }
+  // TODO: will re-enable this as power-ups
+  // increaseRateOfFire() {
+  //   this.blaster.increaseRateOfFire();
+  // }
 
-  decreaseRateOfFire() {
-    this.blaster.decreaseRateOfFire();
-  }
+  // TODO: will re-enable this as power-ups
+  // decreaseRateOfFire() {
+  //   this.blaster.decreaseRateOfFire();
+  // }
 
   static getInitialVerticalPosition(maxHeight: number): number {
     return maxHeight - this.HEIGHT;
@@ -96,15 +100,40 @@ class Player extends MoveableEntity {
     return Math.floor(maxWidth / 2 - this.WIDTH / 2);
   }
 
-  private updatePosition() {
+  private updateHorizontalPosition() {
     if (this.isMovingLeft) {
-      this.moveLeft(this.spacesToMove);
+      this.moveLeft(this.SPACES_TO_MOVE);
     } else if (this.isMovingRight) {
-      this.moveRight(this.spacesToMove);
+      this.moveRight(this.SPACES_TO_MOVE);
     }
 
     if (this.isMovingLeft || this.isMovingRight) {
       this.blaster.updateBlasterHorizontalPosition(this.horizontalPosition);
     }
+  }
+
+  private updateVerticalPosition() {
+    if (this.isMovingUp) {
+      this.moveUp(this.SPACES_TO_MOVE);
+    } else if (this.isMovingDown) {
+      this.moveDown(this.SPACES_TO_MOVE);
+    }
+
+    if (this.isMovingUp || this.isMovingDown) {
+      this.blaster.updateBlasterVerticalPosition(this.verticalPosition);
+    }
+  }
+
+  protected override moveDown(unitsToMove: number) {
+    const newVerticalPosition = this.verticalPosition + unitsToMove;
+    const maxDownPosition = this.canvas.height - this.HEIGHT;
+    this.verticalPosition = Math.min(newVerticalPosition, maxDownPosition);
+  }
+
+  protected override moveUp(unitsToMove: number) {
+    const newVerticalPosition = this.verticalPosition - unitsToMove;
+    const maxUpwardPosition =
+      this.canvas.height - this.MAX_VERTICAL_SPACES_TO_MOVE;
+    this.verticalPosition = Math.max(newVerticalPosition, maxUpwardPosition);
   }
 }
