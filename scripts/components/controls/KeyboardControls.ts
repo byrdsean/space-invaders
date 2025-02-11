@@ -16,6 +16,12 @@ class KeyboardControls {
         case "ArrowRight":
           this.player.startMovingRight();
           break;
+        case "ArrowUp":
+          this.player.startMovingUp();
+          break;
+        case "ArrowDown":
+          this.player.startMovingDown();
+          break;
         case "Space":
           this.player.startShooting();
           break;
@@ -33,10 +39,10 @@ class KeyboardControls {
           this.player.stopMovingRight();
           break;
         case "ArrowUp":
-          this.player.increaseRateOfFire();
+          this.player.stopMovingUp();
           break;
         case "ArrowDown":
-          this.player.decreaseRateOfFire();
+          this.player.stopMovingDown();
           break;
         case "Space":
           this.player.stopShooting();
