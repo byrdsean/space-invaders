@@ -44,16 +44,22 @@ var EnemyType;
     EnemyType[EnemyType["STRONG"] = 2] = "STRONG";
 })(EnemyType || (EnemyType = {}));
 class MoveableEntity {
-    constructor(initialVerticalPosition, initialHorizontalPosition, height, width) {
+    constructor(initialVerticalPosition, initialHorizontalPosition) {
+        this.HEIGHT = 0;
+        this.WIDTH = 0;
         this.isMovingLeft = false;
         this.isMovingRight = false;
         this.isMovingUp = false;
         this.isMovingDown = false;
         this.canvas = CanvasInstance.getInstance();
-        this.HEIGHT = height;
-        this.WIDTH = width;
         this.verticalPosition = initialVerticalPosition;
         this.horizontalPosition = initialHorizontalPosition;
+    }
+    getHeight() {
+        return this.HEIGHT;
+    }
+    getWidth() {
+        return this.WIDTH;
     }
     startMovingLeft() {
         this.isMovingLeft = true;
@@ -106,26 +112,37 @@ class MoveableEntity {
 // @ts-ignore
 class Player extends MoveableEntity {
     constructor(initialVerticalPosition, initialHorizontalPosition) {
-        super(initialVerticalPosition, initialHorizontalPosition, Player.HEIGHT, Player.WIDTH);
+        super(initialVerticalPosition, initialHorizontalPosition);
         this.SPACES_TO_MOVE = 2;
         this.MAX_VERTICAL_SPACES_TO_MOVE = 75;
         this.isShooting = false;
-        this.blaster = new Blaster(this.verticalPosition, this.horizontalPosition, Player.WIDTH);
+        this.SPRITE_LOCATION = "./images/player.png";
+        this.SPRITE_MAX_HEIGHT = 25;
+        const sprite = this.setSprite();
+        this.sprite = sprite.image;
+        this.HEIGHT = sprite.height;
+        this.WIDTH = sprite.width;
+        this.blaster = new Blaster(this.verticalPosition, this.horizontalPosition, this.WIDTH);
         this.healthManagerService = new HealthManagerService(Player.MAX_HEALTH);
     }
     reset() {
         this.isShooting = false;
-        this.verticalPosition = Player.getInitialVerticalPosition(this.canvas.height);
-        this.horizontalPosition = Player.getInitialHorizontalPosition(this.canvas.height);
-        this.blaster = new Blaster(this.verticalPosition, this.horizontalPosition, Player.WIDTH);
+        this.verticalPosition = this.getInitialVerticalPosition(this.canvas.height);
+        this.horizontalPosition = this.getInitialHorizontalPosition(this.canvas.height);
+        this.blaster = new Blaster(this.verticalPosition, this.horizontalPosition, this.WIDTH);
     }
     draw() {
         this.updateHorizontalPosition();
         this.updateVerticalPosition();
-        const previousFillStyle = this.canvas.canvasContext.fillStyle;
-        this.canvas.canvasContext.fillStyle = Player.COLOR;
-        this.canvas.canvasContext.fillRect(this.horizontalPosition, this.verticalPosition, Player.WIDTH, Player.HEIGHT);
-        this.canvas.canvasContext.fillStyle = previousFillStyle;
+        this.canvas.canvasContext.drawImage(this.sprite, 0, //source x position
+        0, //source y position
+        this.sprite.width, //source width
+        this.sprite.height, //source height
+        this.horizontalPosition, //destination x position
+        this.verticalPosition, //destination y position
+        this.WIDTH, //destiination width
+        this.HEIGHT //destination height
+        );
     }
     getNextShot() {
         return this.isShooting ? this.blaster.shoot() : null;
@@ -142,16 +159,18 @@ class Player extends MoveableEntity {
     stopShooting() {
         this.isShooting = false;
     }
+    // TODO: will re-enable this as power-ups
     // increaseRateOfFire() {
     //   this.blaster.increaseRateOfFire();
     // }
+    // TODO: will re-enable this as power-ups
     // decreaseRateOfFire() {
     //   this.blaster.decreaseRateOfFire();
     // }
-    static getInitialVerticalPosition(maxHeight) {
+    getInitialVerticalPosition(maxHeight) {
         return maxHeight - this.HEIGHT;
     }
-    static getInitialHorizontalPosition(maxWidth) {
+    getInitialHorizontalPosition(maxWidth) {
         return Math.floor(maxWidth / 2 - this.WIDTH / 2);
     }
     updateHorizontalPosition() {
@@ -186,15 +205,25 @@ class Player extends MoveableEntity {
         const maxUpwardPosition = this.canvas.height - this.MAX_VERTICAL_SPACES_TO_MOVE;
         this.verticalPosition = Math.max(newVerticalPosition, maxUpwardPosition);
     }
+    setSprite() {
+        const sprite = new Image();
+        sprite.src = this.SPRITE_LOCATION;
+        const maxHeight = Math.min(this.SPRITE_MAX_HEIGHT, sprite.height);
+        const maxWidth = maxHeight < sprite.height
+            ? sprite.width * (maxHeight / sprite.height)
+            : sprite.width;
+        return {
+            image: sprite,
+            width: maxWidth,
+            height: maxHeight,
+        };
+    }
 }
-Player.HEIGHT = 25;
-Player.WIDTH = 25;
-Player.COLOR = "green";
 Player.MAX_HEALTH = 100;
 // @ts-ignore
 class Enemy extends MoveableEntity {
     constructor(initialVerticalPosition, initialHorizontalPosition, maxLeftPosition, maxRightPosition, config) {
-        super(initialVerticalPosition, initialHorizontalPosition, Enemy.HEIGHT, Enemy.WIDTH);
+        super(initialVerticalPosition, initialHorizontalPosition);
         this.BASE_COLOR = {
             red: 117,
             green: 27,
@@ -218,19 +247,21 @@ class Enemy extends MoveableEntity {
         this.nextVerticalPositonToMoveDown = 0;
         this.movementSpeed = 1;
         this.currentColor = this.BASE_COLOR;
+        this.HEIGHT = 25;
+        this.WIDTH = 25;
         this.maxLeftPosition = maxLeftPosition;
         this.maxRightPosition = maxRightPosition;
         this.nextVerticalPositonToMoveDown = initialVerticalPosition;
         this.pointsForDefeating = config.pointsForDefeating;
         this.healthManagerService = new HealthManagerService(config.maxHealth);
-        this.blaster = new Blaster(this.verticalPosition + Enemy.HEIGHT, initialHorizontalPosition, Enemy.WIDTH);
+        this.blaster = new Blaster(this.verticalPosition + this.HEIGHT, initialHorizontalPosition, this.WIDTH);
         this.blaster.shootDownwards();
     }
     draw() {
         this.updatePosition();
         const previousFillStyle = this.canvas.canvasContext.fillStyle;
         this.canvas.canvasContext.fillStyle = this.getRGBAColor();
-        this.canvas.canvasContext.fillRect(this.horizontalPosition, this.verticalPosition, Enemy.WIDTH, Enemy.HEIGHT);
+        this.canvas.canvasContext.fillRect(this.horizontalPosition, this.verticalPosition, this.WIDTH, this.HEIGHT);
         this.canvas.canvasContext.fillStyle = previousFillStyle;
     }
     getNextShot() {
@@ -274,7 +305,7 @@ class Enemy extends MoveableEntity {
     updateMoveRight() {
         if (!this.isMovingRight)
             return;
-        if (this.horizontalPosition + Enemy.WIDTH >= this.maxRightPosition) {
+        if (this.horizontalPosition + this.WIDTH >= this.maxRightPosition) {
             this.stopMovingRight();
             this.setNextVerticalPositionToMoveDown();
             this.startMovingDown();
@@ -289,26 +320,24 @@ class Enemy extends MoveableEntity {
             return;
         if (this.verticalPosition < this.nextVerticalPositonToMoveDown) {
             this.moveDown(this.movementSpeed);
-            this.blaster.updateBlasterVerticalPosition(this.verticalPosition + Enemy.HEIGHT);
+            this.blaster.updateBlasterVerticalPosition(this.verticalPosition + this.HEIGHT);
             return;
         }
         this.stopMovingDown();
         if (this.horizontalPosition <= this.maxLeftPosition) {
             this.startMovingRight();
         }
-        if (this.horizontalPosition + Enemy.WIDTH >= this.maxRightPosition) {
+        if (this.horizontalPosition + this.WIDTH >= this.maxRightPosition) {
             this.startMovingLeft();
         }
     }
     setNextVerticalPositionToMoveDown() {
-        this.nextVerticalPositonToMoveDown += Enemy.HEIGHT;
+        this.nextVerticalPositonToMoveDown += this.HEIGHT;
     }
     getRGBAColor() {
         return `rgba(${this.currentColor.red}, ${this.currentColor.green}, ${this.currentColor.blue}, ${this.currentColor.brightness})`;
     }
 }
-Enemy.HEIGHT = 25;
-Enemy.WIDTH = 25;
 class EnemyFactory {
     constructor() {
         this.weakEnemyStats = {
@@ -609,18 +638,20 @@ class CollisionDetectionService {
         if (!object1 || !object2) {
             return false;
         }
-        if (object1.horizontalPosition + object1.WIDTH <
+        if (object1.horizontalPosition + object1.getWidth() <
             object2.horizontalPosition) {
             return false;
         }
-        if (object2.horizontalPosition + object2.WIDTH <
+        if (object2.horizontalPosition + object2.getWidth() <
             object1.horizontalPosition) {
             return false;
         }
-        if (object1.verticalPosition + object1.HEIGHT < object2.verticalPosition) {
+        if (object1.verticalPosition + object1.getHeight() <
+            object2.verticalPosition) {
             return false;
         }
-        if (object2.verticalPosition + object2.HEIGHT < object1.verticalPosition) {
+        if (object2.verticalPosition + object2.getHeight() <
+            object1.verticalPosition) {
             return false;
         }
         return true;

@@ -1,8 +1,5 @@
 // @ts-ignore
 class Player extends MoveableEntity {
-  public static HEIGHT = 25;
-  public static WIDTH = 25;
-  private static COLOR = "green";
   private static MAX_HEALTH = 100;
 
   private readonly SPACES_TO_MOVE = 2;
@@ -12,36 +9,39 @@ class Player extends MoveableEntity {
   private isShooting: boolean = false;
   private blaster: Blaster;
 
+  private readonly SPRITE_LOCATION = "./images/player.png";
+  private readonly SPRITE_MAX_HEIGHT = 25;
+  private sprite: HTMLImageElement;
+
   constructor(
     initialVerticalPosition: number,
     initialHorizontalPosition: number
   ) {
-    super(
-      initialVerticalPosition,
-      initialHorizontalPosition,
-      Player.HEIGHT,
-      Player.WIDTH
-    );
+    super(initialVerticalPosition, initialHorizontalPosition);
+
+    const sprite = this.setSprite();
+    this.sprite = sprite.image;
+    this.HEIGHT = sprite.height;
+    this.WIDTH = sprite.width;
+
     this.blaster = new Blaster(
       this.verticalPosition,
       this.horizontalPosition,
-      Player.WIDTH
+      this.WIDTH
     );
     this.healthManagerService = new HealthManagerService(Player.MAX_HEALTH);
   }
 
   reset() {
     this.isShooting = false;
-    this.verticalPosition = Player.getInitialVerticalPosition(
-      this.canvas.height
-    );
-    this.horizontalPosition = Player.getInitialHorizontalPosition(
+    this.verticalPosition = this.getInitialVerticalPosition(this.canvas.height);
+    this.horizontalPosition = this.getInitialHorizontalPosition(
       this.canvas.height
     );
     this.blaster = new Blaster(
       this.verticalPosition,
       this.horizontalPosition,
-      Player.WIDTH
+      this.WIDTH
     );
   }
 
@@ -49,17 +49,17 @@ class Player extends MoveableEntity {
     this.updateHorizontalPosition();
     this.updateVerticalPosition();
 
-    const previousFillStyle = this.canvas.canvasContext.fillStyle;
-
-    this.canvas.canvasContext.fillStyle = Player.COLOR;
-    this.canvas.canvasContext.fillRect(
-      this.horizontalPosition,
-      this.verticalPosition,
-      Player.WIDTH,
-      Player.HEIGHT
+    this.canvas.canvasContext.drawImage(
+      this.sprite,
+      0, //source x position
+      0, //source y position
+      this.sprite.width, //source width
+      this.sprite.height, //source height
+      this.horizontalPosition, //destination x position
+      this.verticalPosition, //destination y position
+      this.WIDTH, //destiination width
+      this.HEIGHT //destination height
     );
-
-    this.canvas.canvasContext.fillStyle = previousFillStyle;
   }
 
   getNextShot(): BlasterBullet | null {
@@ -92,11 +92,11 @@ class Player extends MoveableEntity {
   //   this.blaster.decreaseRateOfFire();
   // }
 
-  static getInitialVerticalPosition(maxHeight: number): number {
+  private getInitialVerticalPosition(maxHeight: number): number {
     return maxHeight - this.HEIGHT;
   }
 
-  static getInitialHorizontalPosition(maxWidth: number): number {
+  private getInitialHorizontalPosition(maxWidth: number): number {
     return Math.floor(maxWidth / 2 - this.WIDTH / 2);
   }
 
@@ -135,5 +135,22 @@ class Player extends MoveableEntity {
     const maxUpwardPosition =
       this.canvas.height - this.MAX_VERTICAL_SPACES_TO_MOVE;
     this.verticalPosition = Math.max(newVerticalPosition, maxUpwardPosition);
+  }
+
+  private setSprite(): Sprite {
+    const sprite = new Image();
+    sprite.src = this.SPRITE_LOCATION;
+
+    const maxHeight = Math.min(this.SPRITE_MAX_HEIGHT, sprite.height);
+    const maxWidth =
+      maxHeight < sprite.height
+        ? sprite.width * (maxHeight / sprite.height)
+        : sprite.width;
+
+    return {
+      image: sprite,
+      width: maxWidth,
+      height: maxHeight,
+    };
   }
 }

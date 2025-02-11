@@ -1,8 +1,5 @@
 // @ts-ignore
 class Enemy extends MoveableEntity {
-  public static HEIGHT = 25;
-  public static WIDTH = 25;
-
   private readonly BASE_COLOR: ColorRGBA = {
     red: 117,
     green: 27,
@@ -39,12 +36,12 @@ class Enemy extends MoveableEntity {
     maxRightPosition: number,
     config: EnemyConfig
   ) {
-    super(
-      initialVerticalPosition,
-      initialHorizontalPosition,
-      Enemy.HEIGHT,
-      Enemy.WIDTH
-    );
+    super(initialVerticalPosition, initialHorizontalPosition);
+
+    // TODO: replace with const variables
+    this.HEIGHT = 25;
+    this.WIDTH = 25;
+
     this.maxLeftPosition = maxLeftPosition;
     this.maxRightPosition = maxRightPosition;
     this.nextVerticalPositonToMoveDown = initialVerticalPosition;
@@ -53,9 +50,9 @@ class Enemy extends MoveableEntity {
     this.healthManagerService = new HealthManagerService(config.maxHealth);
 
     this.blaster = new Blaster(
-      this.verticalPosition + Enemy.HEIGHT,
+      this.verticalPosition + this.HEIGHT,
       initialHorizontalPosition,
-      Enemy.WIDTH
+      this.WIDTH
     );
     this.blaster.shootDownwards();
   }
@@ -69,8 +66,8 @@ class Enemy extends MoveableEntity {
     this.canvas.canvasContext.fillRect(
       this.horizontalPosition,
       this.verticalPosition,
-      Enemy.WIDTH,
-      Enemy.HEIGHT
+      this.WIDTH,
+      this.HEIGHT
     );
 
     this.canvas.canvasContext.fillStyle = previousFillStyle;
@@ -125,7 +122,7 @@ class Enemy extends MoveableEntity {
   private updateMoveRight() {
     if (!this.isMovingRight) return;
 
-    if (this.horizontalPosition + Enemy.WIDTH >= this.maxRightPosition) {
+    if (this.horizontalPosition + this.WIDTH >= this.maxRightPosition) {
       this.stopMovingRight();
       this.setNextVerticalPositionToMoveDown();
       this.startMovingDown();
@@ -142,7 +139,7 @@ class Enemy extends MoveableEntity {
       this.moveDown(this.movementSpeed);
 
       this.blaster.updateBlasterVerticalPosition(
-        this.verticalPosition + Enemy.HEIGHT
+        this.verticalPosition + this.HEIGHT
       );
 
       return;
@@ -154,13 +151,13 @@ class Enemy extends MoveableEntity {
       this.startMovingRight();
     }
 
-    if (this.horizontalPosition + Enemy.WIDTH >= this.maxRightPosition) {
+    if (this.horizontalPosition + this.WIDTH >= this.maxRightPosition) {
       this.startMovingLeft();
     }
   }
 
   private setNextVerticalPositionToMoveDown() {
-    this.nextVerticalPositonToMoveDown += Enemy.HEIGHT;
+    this.nextVerticalPositonToMoveDown += this.HEIGHT;
   }
 
   private getRGBAColor() {

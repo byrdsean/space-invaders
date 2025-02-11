@@ -1,7 +1,5 @@
 // @ts-ignore
 class BlasterBullet extends MoveableEntity {
-  public static HEIGHT = 5;
-  public static WIDTH = 5;
   private static DAMAGE = 5;
   private readonly COLOR = "red";
 
@@ -12,13 +10,12 @@ class BlasterBullet extends MoveableEntity {
     initialHorizontalPosition: number,
     bulletSpeed: number
   ) {
-    super(
-      initialVerticalPosition,
-      initialHorizontalPosition,
-      BlasterBullet.HEIGHT,
-      BlasterBullet.WIDTH
-    );
+    super(initialVerticalPosition, initialHorizontalPosition);
     this.bulletSpeed = bulletSpeed;
+
+    // TODO: replace with const variables
+    this.HEIGHT = 5;
+    this.WIDTH = 5;
   }
 
   getDamageAmount(): number {
@@ -34,15 +31,15 @@ class BlasterBullet extends MoveableEntity {
     this.canvas.canvasContext.fillRect(
       this.horizontalPosition,
       this.verticalPosition,
-      BlasterBullet.WIDTH,
-      BlasterBullet.HEIGHT
+      this.WIDTH,
+      this.HEIGHT
     );
 
     this.canvas.canvasContext.fillStyle = previousFillStyle;
   }
 
   isBulletOffScreen(): boolean {
-    const isAboveCanvas = this.verticalPosition <= -BlasterBullet.HEIGHT;
+    const isAboveCanvas = this.verticalPosition <= -this.HEIGHT;
     const isBelowCanvas = this.verticalPosition >= this.canvas.height;
     return isAboveCanvas || isBelowCanvas;
   }

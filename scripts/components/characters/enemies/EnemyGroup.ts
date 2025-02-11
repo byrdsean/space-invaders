@@ -48,6 +48,13 @@ class EnemyGroup {
       .map((enemyList) => enemyList.length)
       .reduce((acc, length) => Math.max(acc, length), 0);
 
+    // const totalEnemyCount = enemies
+    //   .map((enemyList) => enemyList.length)
+    //   .reduce((acc, length) => acc+length, 0);
+
+    // const allEnemies = [...new Array(totalEnemyCount).keys()]
+    //   .map()
+
     enemies.forEach((row, rowIndex) => {
       const verticalPosition = rowIndex * (Enemy.HEIGHT + this.ENEMY_SPACING);
       const horizontalOffset = this.calculateRowOffset(row.length);

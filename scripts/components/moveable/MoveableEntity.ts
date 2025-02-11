@@ -1,6 +1,6 @@
 abstract class MoveableEntity {
-  public readonly HEIGHT: number;
-  public readonly WIDTH: number;
+  protected HEIGHT: number = 0;
+  protected WIDTH: number = 0;
 
   verticalPosition: number;
   horizontalPosition: number;
@@ -14,15 +14,19 @@ abstract class MoveableEntity {
 
   constructor(
     initialVerticalPosition: number,
-    initialHorizontalPosition: number,
-    height: number,
-    width: number
+    initialHorizontalPosition: number
   ) {
     this.canvas = CanvasInstance.getInstance();
-    this.HEIGHT = height;
-    this.WIDTH = width;
     this.verticalPosition = initialVerticalPosition;
     this.horizontalPosition = initialHorizontalPosition;
+  }
+
+  getHeight(): number {
+    return this.HEIGHT;
+  }
+
+  getWidth(): number {
+    return this.WIDTH;
   }
 
   startMovingLeft() {
