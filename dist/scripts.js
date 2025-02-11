@@ -107,6 +107,7 @@ class MoveableEntity {
 class Player extends MoveableEntity {
     constructor(initialVerticalPosition, initialHorizontalPosition) {
         super(initialVerticalPosition, initialHorizontalPosition, Player.HEIGHT, Player.WIDTH);
+        this.spacesToMove = 2;
         this.isShooting = false;
         this.blaster = new Blaster(this.verticalPosition, this.horizontalPosition, Player.WIDTH);
         this.healthManagerService = new HealthManagerService(Player.MAX_HEALTH);
@@ -153,10 +154,10 @@ class Player extends MoveableEntity {
     }
     updatePosition() {
         if (this.isMovingLeft) {
-            this.moveLeft(1);
+            this.moveLeft(this.spacesToMove);
         }
         else if (this.isMovingRight) {
-            this.moveRight(1);
+            this.moveRight(this.spacesToMove);
         }
         if (this.isMovingLeft || this.isMovingRight) {
             this.blaster.updateBlasterHorizontalPosition(this.horizontalPosition);
