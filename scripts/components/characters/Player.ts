@@ -5,6 +5,7 @@ class Player extends MoveableEntity {
   private static COLOR = "green";
   private static MAX_HEALTH = 100;
 
+  private readonly spacesToMove = 2;
   private readonly healthManagerService: HealthManagerService;
 
   private isShooting: boolean = false;
@@ -97,9 +98,9 @@ class Player extends MoveableEntity {
 
   private updatePosition() {
     if (this.isMovingLeft) {
-      this.moveLeft(1);
+      this.moveLeft(this.spacesToMove);
     } else if (this.isMovingRight) {
-      this.moveRight(1);
+      this.moveRight(this.spacesToMove);
     }
 
     if (this.isMovingLeft || this.isMovingRight) {

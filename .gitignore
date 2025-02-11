@@ -23,4 +23,7 @@ node_modules/
 .history
 .ionide
 
+# Ignore any notes I take
+notes/
+
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode
