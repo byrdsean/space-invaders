@@ -29,31 +29,18 @@ class Enemy extends MoveableEntity {
   private movementSpeed = 1;
   private currentColor: ColorRGBA = this.BASE_COLOR;
 
-  constructor(
-    initialVerticalPosition: number,
-    initialHorizontalPosition: number,
-    maxLeftPosition: number,
-    maxRightPosition: number,
-    config: EnemyConfig
-  ) {
-    super(initialVerticalPosition, initialHorizontalPosition);
+  constructor(config: EnemyConfig) {
+    super();
 
     // TODO: replace with const variables
     this.HEIGHT = 25;
     this.WIDTH = 25;
 
-    this.maxLeftPosition = maxLeftPosition;
-    this.maxRightPosition = maxRightPosition;
-    this.nextVerticalPositonToMoveDown = initialVerticalPosition;
     this.pointsForDefeating = config.pointsForDefeating;
 
     this.healthManagerService = new HealthManagerService(config.maxHealth);
 
-    this.blaster = new Blaster(
-      this.verticalPosition + this.HEIGHT,
-      initialHorizontalPosition,
-      this.WIDTH
-    );
+    this.blaster = new Blaster(this.verticalPosition + this.HEIGHT);
     this.blaster.shootDownwards();
   }
 
@@ -98,6 +85,20 @@ class Enemy extends MoveableEntity {
 
   getPointsForDefeating(): number {
     return this.pointsForDefeating;
+  }
+
+  setMaxHorizontalBounds(maxLeftPosition: number, maxRightPosition: number) {
+    this.maxLeftPosition = maxLeftPosition;
+    this.maxRightPosition = maxRightPosition;
+  }
+
+  setStartingPosition(verticalPosition: number, horizontalPosition: number) {
+    this.verticalPosition = verticalPosition;
+    this.horizontalPosition = horizontalPosition;
+    this.nextVerticalPositonToMoveDown = verticalPosition;
+
+    this.blaster.updateBlasterHorizontalPosition(this.horizontalPosition);
+    this.blaster.updateBlasterVerticalPosition(this.horizontalPosition);
   }
 
   private updatePosition() {

@@ -33,6 +33,7 @@ class EnemyGroup {
     const newCoolDownPeriod =
       this.cooldownPeriod - this.CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS;
 
+    // TODO: refactor with Math.max()
     this.cooldownPeriod =
       newCoolDownPeriod < this.MIN_COOLDOWN_PERIOD_MILLISECONDS
         ? this.MIN_COOLDOWN_PERIOD_MILLISECONDS
@@ -48,30 +49,35 @@ class EnemyGroup {
       .map((enemyList) => enemyList.length)
       .reduce((acc, length) => Math.max(acc, length), 0);
 
-    // const totalEnemyCount = enemies
-    //   .map((enemyList) => enemyList.length)
-    //   .reduce((acc, length) => acc+length, 0);
-
-    // const allEnemies = [...new Array(totalEnemyCount).keys()]
-    //   .map()
-
     enemies.forEach((row, rowIndex) => {
-      const verticalPosition = rowIndex * (Enemy.HEIGHT + this.ENEMY_SPACING);
-      const horizontalOffset = this.calculateRowOffset(row.length);
-
       row.forEach((enemyType, colIndex) => {
-        const horizontalPosition =
-          colIndex * (Enemy.WIDTH + this.ENEMY_SPACING);
-        const { minLeftPositionToMove, maxRightPositionToMove } =
-          this.getMaxPositionsToMove(maxEnemiesInARow, row.length, colIndex);
+        const enemy = EnemyFactory.getInstance().buildNewEnemy(enemyType);
 
-        const enemy = EnemyFactory.getInstance().buildNewEnemy(
-          enemyType,
-          verticalPosition,
-          horizontalPosition + horizontalOffset,
+        const { minLeftPositionToMove, maxRightPositionToMove } =
+          this.getMaxPositionsToMove(
+            maxEnemiesInARow,
+            enemy.getWidth(),
+            row.length,
+            colIndex
+          );
+        enemy.setMaxHorizontalBounds(
           minLeftPositionToMove,
           maxRightPositionToMove
         );
+
+        const verticalPosition =
+          rowIndex * (enemy.getHeight() + this.ENEMY_SPACING);
+        const horizontalOffset = this.calculateRowOffset(
+          enemy.getWidth(),
+          row.length
+        );
+        const horizontalPosition =
+          colIndex * (enemy.getWidth() + this.ENEMY_SPACING);
+        enemy.setStartingPosition(
+          verticalPosition,
+          horizontalPosition + horizontalOffset
+        );
+
         enemy.startMovingLeft();
 
         this.enemies.push(enemy);
@@ -96,16 +102,19 @@ class EnemyGroup {
 
   private getMaxPositionsToMove(
     maxEnemiesInARow: number,
+    enemyWidth: number,
     rowLength: number,
     enemyIndex: number
   ): MaxPositionsToMove {
     const minLeftPositionToMove = this.calculateMinLeftPositionToMove(
       maxEnemiesInARow,
+      enemyWidth,
       rowLength,
       enemyIndex
     );
     const maxRightPositionToMove = this.calculateMaxRightPositionToMove(
       maxEnemiesInARow,
+      enemyWidth,
       rowLength,
       enemyIndex
     );
@@ -114,13 +123,14 @@ class EnemyGroup {
 
   private calculateMaxRightPositionToMove(
     maxEnemiesInARow: number,
+    enemyWidth: number,
     rowLength: number,
     enemyIndex: number
   ): number {
     const spacesToRight =
       (maxEnemiesInARow - rowLength) / 2 + (rowLength - enemyIndex - 1);
     const maxRightPositionToMove =
-      spacesToRight * Enemy.WIDTH +
+      spacesToRight * enemyWidth +
       spacesToRight * this.ENEMY_SPACING +
       this.ENEMY_SPACING;
     return this.canvas.width - maxRightPositionToMove;
@@ -128,20 +138,21 @@ class EnemyGroup {
 
   private calculateMinLeftPositionToMove(
     maxEnemiesInARow: number,
+    enemyWidth: number,
     rowLength: number,
     enemyIndex: number
   ): number {
     const spacesToLeft = (maxEnemiesInARow - rowLength) / 2 + enemyIndex;
     return (
-      spacesToLeft * Enemy.WIDTH +
+      spacesToLeft * enemyWidth +
       spacesToLeft * this.ENEMY_SPACING +
       this.ENEMY_SPACING
     );
   }
 
-  private calculateRowOffset(rowLength: number) {
+  private calculateRowOffset(enemyWidth: number, rowLength: number) {
     const maxWidthOfRow =
-      rowLength * Enemy.WIDTH + (rowLength - 1) * this.ENEMY_SPACING;
+      rowLength * enemyWidth + (rowLength - 1) * this.ENEMY_SPACING;
     return Math.floor(this.canvas.width / 2) - Math.floor(maxWidthOfRow / 2);
   }
 }

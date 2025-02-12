@@ -2,23 +2,18 @@ abstract class MoveableEntity {
   protected HEIGHT: number = 0;
   protected WIDTH: number = 0;
 
-  verticalPosition: number;
-  horizontalPosition: number;
+  protected verticalPosition: number = 0;
+  protected horizontalPosition: number = 0;
 
-  isMovingLeft: boolean = false;
-  isMovingRight: boolean = false;
-  isMovingUp: boolean = false;
-  isMovingDown: boolean = false;
+  protected isMovingLeft: boolean = false;
+  protected isMovingRight: boolean = false;
+  protected isMovingUp: boolean = false;
+  protected isMovingDown: boolean = false;
 
   protected readonly canvas: Canvas;
 
-  constructor(
-    initialVerticalPosition: number,
-    initialHorizontalPosition: number
-  ) {
+  constructor() {
     this.canvas = CanvasInstance.getInstance();
-    this.verticalPosition = initialVerticalPosition;
-    this.horizontalPosition = initialHorizontalPosition;
   }
 
   getHeight(): number {
@@ -27,6 +22,14 @@ abstract class MoveableEntity {
 
   getWidth(): number {
     return this.WIDTH;
+  }
+
+  getVerticalPosition() {
+    return this.verticalPosition;
+  }
+
+  getHorizontalPosition() {
+    return this.horizontalPosition;
   }
 
   startMovingLeft() {
@@ -89,6 +92,13 @@ abstract class MoveableEntity {
 
   protected moveDown(unitsToMove: number) {
     this.verticalPosition = this.verticalPosition + unitsToMove;
+  }
+
+  protected reset() {
+    this.isMovingLeft = false;
+    this.isMovingRight = false;
+    this.isMovingUp = false;
+    this.isMovingDown = false;
   }
 
   abstract draw(): void;

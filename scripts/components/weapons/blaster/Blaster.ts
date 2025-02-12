@@ -5,31 +5,20 @@ class Blaster {
   private readonly CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS = 25;
 
   private readonly ownerWidth: number;
-  private verticalPosition: number;
-  private horizontalPosition: number;
 
+  private verticalPosition: number = 0;
+  private horizontalPosition: number = 0;
   private timeLastShotFired = 0;
   private cooldownPeriod = this.MAX_COOLDOWN_PERIOD_MILLISECONDS;
   private isShootingDown = false;
 
-  constructor(
-    initialVerticalPosition: number,
-    ownerHorizontalPosition: number,
-    ownerWidth: number
-  ) {
+  constructor(ownerWidth: number) {
     this.ownerWidth = ownerWidth;
-    this.verticalPosition = initialVerticalPosition;
-
-    this.horizontalPosition = 0;
-    this.updateBlasterHorizontalPosition(ownerHorizontalPosition);
   }
 
   shoot(): BlasterBullet | null {
     const currentTime = Date.now();
-    const shouldFire =
-      currentTime - this.timeLastShotFired >= this.cooldownPeriod;
-
-    if (!shouldFire) return null;
+    if (!this.shouldFire(currentTime)) return null;
 
     this.timeLastShotFired = currentTime;
 
@@ -69,12 +58,8 @@ class Blaster {
   }
 
   updateBlasterHorizontalPosition(ownerHorizontalPosition: number) {
-    const blasterHorizontalOffset = Math.floor(BlasterBullet.WIDTH / 2);
-
     this.horizontalPosition =
-      ownerHorizontalPosition +
-      Math.floor(this.ownerWidth / 2) -
-      blasterHorizontalOffset;
+      ownerHorizontalPosition + Math.floor(this.ownerWidth / 2);
   }
 
   updateBlasterVerticalPosition(ownerVerticalPosition: number) {
@@ -83,5 +68,9 @@ class Blaster {
 
   shootDownwards() {
     this.isShootingDown = true;
+  }
+
+  private shouldFire(currentTime: number): boolean {
+    return currentTime - this.timeLastShotFired >= this.cooldownPeriod;
   }
 }

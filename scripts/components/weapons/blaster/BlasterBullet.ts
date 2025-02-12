@@ -6,11 +6,14 @@ class BlasterBullet extends MoveableEntity {
   private readonly bulletSpeed: number;
 
   constructor(
-    initialVerticalPosition: number,
-    initialHorizontalPosition: number,
+    verticalPosition: number,
+    horizontalPosition: number,
     bulletSpeed: number
   ) {
-    super(initialVerticalPosition, initialHorizontalPosition);
+    super();
+
+    this.verticalPosition = verticalPosition;
+    this.horizontalPosition = horizontalPosition;
     this.bulletSpeed = bulletSpeed;
 
     // TODO: replace with const variables

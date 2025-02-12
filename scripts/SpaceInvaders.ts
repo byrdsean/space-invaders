@@ -27,14 +27,7 @@ class SpaceInvaders {
     this.renderMinimumMilliseconds = Math.floor(millisecondsPerFrame) - 1;
 
     this.canvas = CanvasInstance.getInstance();
-
-    const playerVerticalPosition = Player.getInitialVerticalPosition(
-      this.canvas.height
-    );
-    const playerHorizontalPosition = Player.getInitialHorizontalPosition(
-      this.canvas.height
-    );
-    this.player = new Player(playerVerticalPosition, playerHorizontalPosition);
+    this.player = new Player();
     this.enemyGroup = new EnemyGroup();
 
     this.keyboardControls = new KeyboardControls(this.player, () => {

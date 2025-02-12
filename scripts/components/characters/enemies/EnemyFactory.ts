@@ -23,21 +23,9 @@ class EnemyFactory {
     return this.instance;
   }
 
-  buildNewEnemy(
-    enemyType: EnemyType,
-    startingVerticalPosition: number,
-    startingHorizontalPosition: number,
-    minLeftPositionToMove: number,
-    maxRightPositionToMove: number
-  ): Enemy {
+  buildNewEnemy(enemyType: EnemyType): Enemy {
     const enemyConfig = this.getConfigForEnemyType(enemyType);
-    return new Enemy(
-      startingVerticalPosition,
-      startingHorizontalPosition,
-      minLeftPositionToMove,
-      maxRightPositionToMove,
-      enemyConfig
-    );
+    return new Enemy(enemyConfig);
   }
 
   private getConfigForEnemyType(enemyType: EnemyType): EnemyConfig {
