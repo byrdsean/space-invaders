@@ -1,8 +1,5 @@
 // @ts-ignore
 class Enemy extends MoveableEntity {
-  public static HEIGHT = 25;
-  public static WIDTH = 25;
-
   private readonly BASE_COLOR: ColorRGBA = {
     red: 117,
     green: 27,
@@ -26,37 +23,26 @@ class Enemy extends MoveableEntity {
   private readonly blaster: Blaster;
   private readonly pointsForDefeating: number;
 
+  private readonly ENEMY_HEIGHT = 25;
+  private readonly ENEMY_WIDTH = 25;
+
   private maxLeftPosition = 0;
   private maxRightPosition = 0;
   private nextVerticalPositonToMoveDown = 0;
   private movementSpeed = 1;
   private currentColor: ColorRGBA = this.BASE_COLOR;
 
-  constructor(
-    initialVerticalPosition: number,
-    initialHorizontalPosition: number,
-    maxLeftPosition: number,
-    maxRightPosition: number,
-    config: EnemyConfig
-  ) {
-    super(
-      initialVerticalPosition,
-      initialHorizontalPosition,
-      Enemy.HEIGHT,
-      Enemy.WIDTH
-    );
-    this.maxLeftPosition = maxLeftPosition;
-    this.maxRightPosition = maxRightPosition;
-    this.nextVerticalPositonToMoveDown = initialVerticalPosition;
+  constructor(config: EnemyConfig) {
+    super();
+
+    this.HEIGHT = this.ENEMY_HEIGHT;
+    this.WIDTH = this.ENEMY_WIDTH;
+
     this.pointsForDefeating = config.pointsForDefeating;
 
     this.healthManagerService = new HealthManagerService(config.maxHealth);
 
-    this.blaster = new Blaster(
-      this.verticalPosition + Enemy.HEIGHT,
-      initialHorizontalPosition,
-      Enemy.WIDTH
-    );
+    this.blaster = new Blaster(this.verticalPosition + this.HEIGHT);
     this.blaster.shootDownwards();
   }
 
@@ -69,8 +55,8 @@ class Enemy extends MoveableEntity {
     this.canvas.canvasContext.fillRect(
       this.horizontalPosition,
       this.verticalPosition,
-      Enemy.WIDTH,
-      Enemy.HEIGHT
+      this.WIDTH,
+      this.HEIGHT
     );
 
     this.canvas.canvasContext.fillStyle = previousFillStyle;
@@ -103,6 +89,20 @@ class Enemy extends MoveableEntity {
     return this.pointsForDefeating;
   }
 
+  setMaxHorizontalBounds(maxLeftPosition: number, maxRightPosition: number) {
+    this.maxLeftPosition = maxLeftPosition;
+    this.maxRightPosition = maxRightPosition;
+  }
+
+  setStartingPosition(verticalPosition: number, horizontalPosition: number) {
+    this.verticalPosition = verticalPosition;
+    this.horizontalPosition = horizontalPosition;
+    this.nextVerticalPositonToMoveDown = verticalPosition;
+
+    this.blaster.updateBlasterHorizontalPosition(this.horizontalPosition);
+    this.blaster.updateBlasterVerticalPosition(this.horizontalPosition);
+  }
+
   private updatePosition() {
     this.updateMoveLeft();
     this.updateMoveRight();
@@ -125,7 +125,7 @@ class Enemy extends MoveableEntity {
   private updateMoveRight() {
     if (!this.isMovingRight) return;
 
-    if (this.horizontalPosition + Enemy.WIDTH >= this.maxRightPosition) {
+    if (this.horizontalPosition + this.WIDTH >= this.maxRightPosition) {
       this.stopMovingRight();
       this.setNextVerticalPositionToMoveDown();
       this.startMovingDown();
@@ -142,7 +142,7 @@ class Enemy extends MoveableEntity {
       this.moveDown(this.movementSpeed);
 
       this.blaster.updateBlasterVerticalPosition(
-        this.verticalPosition + Enemy.HEIGHT
+        this.verticalPosition + this.HEIGHT
       );
 
       return;
@@ -154,13 +154,13 @@ class Enemy extends MoveableEntity {
       this.startMovingRight();
     }
 
-    if (this.horizontalPosition + Enemy.WIDTH >= this.maxRightPosition) {
+    if (this.horizontalPosition + this.WIDTH >= this.maxRightPosition) {
       this.startMovingLeft();
     }
   }
 
   private setNextVerticalPositionToMoveDown() {
-    this.nextVerticalPositonToMoveDown += Enemy.HEIGHT;
+    this.nextVerticalPositonToMoveDown += this.HEIGHT;
   }
 
   private getRGBAColor() {

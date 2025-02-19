@@ -1,23 +1,25 @@
 // @ts-ignore
 class BlasterBullet extends MoveableEntity {
-  public static HEIGHT = 5;
-  public static WIDTH = 5;
   private static DAMAGE = 5;
   private readonly COLOR = "red";
+
+  private readonly BULLET_HEIGHT = 5;
+  private readonly BULLET_WIDTH = 5;
 
   private readonly bulletSpeed: number;
 
   constructor(
-    initialVerticalPosition: number,
-    initialHorizontalPosition: number,
+    verticalPosition: number,
+    horizontalPosition: number,
     bulletSpeed: number
   ) {
-    super(
-      initialVerticalPosition,
-      initialHorizontalPosition,
-      BlasterBullet.HEIGHT,
-      BlasterBullet.WIDTH
-    );
+    super();
+
+    this.HEIGHT = this.BULLET_HEIGHT;
+    this.WIDTH = this.BULLET_WIDTH;
+
+    this.verticalPosition = verticalPosition;
+    this.horizontalPosition = horizontalPosition;
     this.bulletSpeed = bulletSpeed;
   }
 
@@ -34,15 +36,15 @@ class BlasterBullet extends MoveableEntity {
     this.canvas.canvasContext.fillRect(
       this.horizontalPosition,
       this.verticalPosition,
-      BlasterBullet.WIDTH,
-      BlasterBullet.HEIGHT
+      this.WIDTH,
+      this.HEIGHT
     );
 
     this.canvas.canvasContext.fillStyle = previousFillStyle;
   }
 
   isBulletOffScreen(): boolean {
-    const isAboveCanvas = this.verticalPosition <= -BlasterBullet.HEIGHT;
+    const isAboveCanvas = this.verticalPosition <= -this.HEIGHT;
     const isBelowCanvas = this.verticalPosition >= this.canvas.height;
     return isAboveCanvas || isBelowCanvas;
   }

@@ -1,65 +1,61 @@
 // @ts-ignore
 class Player extends MoveableEntity {
-  public static HEIGHT = 25;
-  public static WIDTH = 25;
-  private static COLOR = "green";
-  private static MAX_HEALTH = 100;
+  private readonly MAX_HEALTH = 100;
 
-  private readonly SPACES_TO_MOVE = 2;
   private readonly MAX_VERTICAL_SPACES_TO_MOVE = 75;
+  private readonly SPACES_TO_MOVE = 2;
+
+  private readonly SPRITE_LOCATION = "./dist/images/player.png";
+  private readonly SPRITE_HEIGHT = 50;
+  private readonly SPRITE_WIDTH = 59;
+
   private readonly healthManagerService: HealthManagerService;
 
   private isShooting: boolean = false;
   private blaster: Blaster;
+  private sprite: HTMLImageElement;
 
-  constructor(
-    initialVerticalPosition: number,
-    initialHorizontalPosition: number
-  ) {
-    super(
-      initialVerticalPosition,
-      initialHorizontalPosition,
-      Player.HEIGHT,
-      Player.WIDTH
-    );
-    this.blaster = new Blaster(
-      this.verticalPosition,
-      this.horizontalPosition,
-      Player.WIDTH
-    );
-    this.healthManagerService = new HealthManagerService(Player.MAX_HEALTH);
+  constructor() {
+    super();
+
+    this.sprite = this.setSprite();
+
+    this.setStartingPosition();
+
+    this.blaster = new Blaster(this.WIDTH);
+    this.blaster.updateBlasterHorizontalPosition(this.horizontalPosition);
+    this.blaster.updateBlasterVerticalPosition(this.verticalPosition);
+
+    this.healthManagerService = new HealthManagerService(this.MAX_HEALTH);
   }
 
   reset() {
+    super.reset();
+
+    this.setStartingPosition();
+
     this.isShooting = false;
-    this.verticalPosition = Player.getInitialVerticalPosition(
-      this.canvas.height
-    );
-    this.horizontalPosition = Player.getInitialHorizontalPosition(
-      this.canvas.height
-    );
-    this.blaster = new Blaster(
-      this.verticalPosition,
-      this.horizontalPosition,
-      Player.WIDTH
-    );
+
+    this.blaster = new Blaster(this.WIDTH);
+    this.blaster.updateBlasterHorizontalPosition(this.horizontalPosition);
+    this.blaster.updateBlasterVerticalPosition(this.verticalPosition);
   }
 
   override draw() {
     this.updateHorizontalPosition();
     this.updateVerticalPosition();
 
-    const previousFillStyle = this.canvas.canvasContext.fillStyle;
-
-    this.canvas.canvasContext.fillStyle = Player.COLOR;
-    this.canvas.canvasContext.fillRect(
+    this.canvas.canvasContext.drawImage(
+      this.sprite,
+      0,
+      0,
+      this.WIDTH,
+      this.HEIGHT,
       this.horizontalPosition,
       this.verticalPosition,
-      Player.WIDTH,
-      Player.HEIGHT
+      this.WIDTH,
+      this.HEIGHT
     );
-
-    this.canvas.canvasContext.fillStyle = previousFillStyle;
   }
 
   getNextShot(): BlasterBullet | null {
@@ -92,11 +88,11 @@ class Player extends MoveableEntity {
   //   this.blaster.decreaseRateOfFire();
   // }
 
-  static getInitialVerticalPosition(maxHeight: number): number {
+  private getStartingVerticalPosition(maxHeight: number): number {
     return maxHeight - this.HEIGHT;
   }
 
-  static getInitialHorizontalPosition(maxWidth: number): number {
+  private getStartingHorizontalPosition(maxWidth: number): number {
     return Math.floor(maxWidth / 2 - this.WIDTH / 2);
   }
 
@@ -122,6 +118,25 @@ class Player extends MoveableEntity {
     if (this.isMovingUp || this.isMovingDown) {
       this.blaster.updateBlasterVerticalPosition(this.verticalPosition);
     }
+  }
+
+  private setSprite(): HTMLImageElement {
+    const sprite = new Image();
+    sprite.src = this.SPRITE_LOCATION;
+
+    this.WIDTH = this.SPRITE_WIDTH;
+    this.HEIGHT = this.SPRITE_HEIGHT;
+
+    return sprite;
+  }
+
+  private setStartingPosition() {
+    this.verticalPosition = this.getStartingVerticalPosition(
+      this.canvas.height
+    );
+    this.horizontalPosition = this.getStartingHorizontalPosition(
+      this.canvas.height
+    );
   }
 
   protected override moveDown(unitsToMove: number) {

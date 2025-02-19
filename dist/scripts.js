@@ -44,16 +44,28 @@ var EnemyType;
     EnemyType[EnemyType["STRONG"] = 2] = "STRONG";
 })(EnemyType || (EnemyType = {}));
 class MoveableEntity {
-    constructor(initialVerticalPosition, initialHorizontalPosition, height, width) {
+    constructor() {
+        this.HEIGHT = 0;
+        this.WIDTH = 0;
+        this.verticalPosition = 0;
+        this.horizontalPosition = 0;
         this.isMovingLeft = false;
         this.isMovingRight = false;
         this.isMovingUp = false;
         this.isMovingDown = false;
         this.canvas = CanvasInstance.getInstance();
-        this.HEIGHT = height;
-        this.WIDTH = width;
-        this.verticalPosition = initialVerticalPosition;
-        this.horizontalPosition = initialHorizontalPosition;
+    }
+    getHeight() {
+        return this.HEIGHT;
+    }
+    getWidth() {
+        return this.WIDTH;
+    }
+    getVerticalPosition() {
+        return this.verticalPosition;
+    }
+    getHorizontalPosition() {
+        return this.horizontalPosition;
     }
     startMovingLeft() {
         this.isMovingLeft = true;
@@ -102,30 +114,43 @@ class MoveableEntity {
     moveDown(unitsToMove) {
         this.verticalPosition = this.verticalPosition + unitsToMove;
     }
+    reset() {
+        this.isMovingLeft = false;
+        this.isMovingRight = false;
+        this.isMovingUp = false;
+        this.isMovingDown = false;
+    }
 }
 // @ts-ignore
 class Player extends MoveableEntity {
-    constructor(initialVerticalPosition, initialHorizontalPosition) {
-        super(initialVerticalPosition, initialHorizontalPosition, Player.HEIGHT, Player.WIDTH);
-        this.SPACES_TO_MOVE = 2;
+    constructor() {
+        super();
+        this.MAX_HEALTH = 100;
         this.MAX_VERTICAL_SPACES_TO_MOVE = 75;
+        this.SPACES_TO_MOVE = 2;
+        this.SPRITE_LOCATION = "./dist/images/player.png";
+        this.SPRITE_HEIGHT = 50;
+        this.SPRITE_WIDTH = 59;
         this.isShooting = false;
-        this.blaster = new Blaster(this.verticalPosition, this.horizontalPosition, Player.WIDTH);
-        this.healthManagerService = new HealthManagerService(Player.MAX_HEALTH);
+        this.sprite = this.setSprite();
+        this.setStartingPosition();
+        this.blaster = new Blaster(this.WIDTH);
+        this.blaster.updateBlasterHorizontalPosition(this.horizontalPosition);
+        this.blaster.updateBlasterVerticalPosition(this.verticalPosition);
+        this.healthManagerService = new HealthManagerService(this.MAX_HEALTH);
     }
     reset() {
+        super.reset();
+        this.setStartingPosition();
         this.isShooting = false;
-        this.verticalPosition = Player.getInitialVerticalPosition(this.canvas.height);
-        this.horizontalPosition = Player.getInitialHorizontalPosition(this.canvas.height);
-        this.blaster = new Blaster(this.verticalPosition, this.horizontalPosition, Player.WIDTH);
+        this.blaster = new Blaster(this.WIDTH);
+        this.blaster.updateBlasterHorizontalPosition(this.horizontalPosition);
+        this.blaster.updateBlasterVerticalPosition(this.verticalPosition);
     }
     draw() {
         this.updateHorizontalPosition();
         this.updateVerticalPosition();
-        const previousFillStyle = this.canvas.canvasContext.fillStyle;
-        this.canvas.canvasContext.fillStyle = Player.COLOR;
-        this.canvas.canvasContext.fillRect(this.horizontalPosition, this.verticalPosition, Player.WIDTH, Player.HEIGHT);
-        this.canvas.canvasContext.fillStyle = previousFillStyle;
+        this.canvas.canvasContext.drawImage(this.sprite, 0, 0, this.WIDTH, this.HEIGHT, this.horizontalPosition, this.verticalPosition, this.WIDTH, this.HEIGHT);
     }
     getNextShot() {
         return this.isShooting ? this.blaster.shoot() : null;
@@ -142,16 +167,18 @@ class Player extends MoveableEntity {
     stopShooting() {
         this.isShooting = false;
     }
+    // TODO: will re-enable this as power-ups
     // increaseRateOfFire() {
     //   this.blaster.increaseRateOfFire();
     // }
+    // TODO: will re-enable this as power-ups
     // decreaseRateOfFire() {
     //   this.blaster.decreaseRateOfFire();
     // }
-    static getInitialVerticalPosition(maxHeight) {
+    getStartingVerticalPosition(maxHeight) {
         return maxHeight - this.HEIGHT;
     }
-    static getInitialHorizontalPosition(maxWidth) {
+    getStartingHorizontalPosition(maxWidth) {
         return Math.floor(maxWidth / 2 - this.WIDTH / 2);
     }
     updateHorizontalPosition() {
@@ -176,6 +203,17 @@ class Player extends MoveableEntity {
             this.blaster.updateBlasterVerticalPosition(this.verticalPosition);
         }
     }
+    setSprite() {
+        const sprite = new Image();
+        sprite.src = this.SPRITE_LOCATION;
+        this.WIDTH = this.SPRITE_WIDTH;
+        this.HEIGHT = this.SPRITE_HEIGHT;
+        return sprite;
+    }
+    setStartingPosition() {
+        this.verticalPosition = this.getStartingVerticalPosition(this.canvas.height);
+        this.horizontalPosition = this.getStartingHorizontalPosition(this.canvas.height);
+    }
     moveDown(unitsToMove) {
         const newVerticalPosition = this.verticalPosition + unitsToMove;
         const maxDownPosition = this.canvas.height - this.HEIGHT;
@@ -187,14 +225,10 @@ class Player extends MoveableEntity {
         this.verticalPosition = Math.max(newVerticalPosition, maxUpwardPosition);
     }
 }
-Player.HEIGHT = 25;
-Player.WIDTH = 25;
-Player.COLOR = "green";
-Player.MAX_HEALTH = 100;
 // @ts-ignore
 class Enemy extends MoveableEntity {
-    constructor(initialVerticalPosition, initialHorizontalPosition, maxLeftPosition, maxRightPosition, config) {
-        super(initialVerticalPosition, initialHorizontalPosition, Enemy.HEIGHT, Enemy.WIDTH);
+    constructor(config) {
+        super();
         this.BASE_COLOR = {
             red: 117,
             green: 27,
@@ -213,24 +247,25 @@ class Enemy extends MoveableEntity {
             blue: 0,
             brightness: 1,
         };
+        this.ENEMY_HEIGHT = 25;
+        this.ENEMY_WIDTH = 25;
         this.maxLeftPosition = 0;
         this.maxRightPosition = 0;
         this.nextVerticalPositonToMoveDown = 0;
         this.movementSpeed = 1;
         this.currentColor = this.BASE_COLOR;
-        this.maxLeftPosition = maxLeftPosition;
-        this.maxRightPosition = maxRightPosition;
-        this.nextVerticalPositonToMoveDown = initialVerticalPosition;
+        this.HEIGHT = this.ENEMY_HEIGHT;
+        this.WIDTH = this.ENEMY_WIDTH;
         this.pointsForDefeating = config.pointsForDefeating;
         this.healthManagerService = new HealthManagerService(config.maxHealth);
-        this.blaster = new Blaster(this.verticalPosition + Enemy.HEIGHT, initialHorizontalPosition, Enemy.WIDTH);
+        this.blaster = new Blaster(this.verticalPosition + this.HEIGHT);
         this.blaster.shootDownwards();
     }
     draw() {
         this.updatePosition();
         const previousFillStyle = this.canvas.canvasContext.fillStyle;
         this.canvas.canvasContext.fillStyle = this.getRGBAColor();
-        this.canvas.canvasContext.fillRect(this.horizontalPosition, this.verticalPosition, Enemy.WIDTH, Enemy.HEIGHT);
+        this.canvas.canvasContext.fillRect(this.horizontalPosition, this.verticalPosition, this.WIDTH, this.HEIGHT);
         this.canvas.canvasContext.fillStyle = previousFillStyle;
     }
     getNextShot() {
@@ -253,6 +288,17 @@ class Enemy extends MoveableEntity {
     getPointsForDefeating() {
         return this.pointsForDefeating;
     }
+    setMaxHorizontalBounds(maxLeftPosition, maxRightPosition) {
+        this.maxLeftPosition = maxLeftPosition;
+        this.maxRightPosition = maxRightPosition;
+    }
+    setStartingPosition(verticalPosition, horizontalPosition) {
+        this.verticalPosition = verticalPosition;
+        this.horizontalPosition = horizontalPosition;
+        this.nextVerticalPositonToMoveDown = verticalPosition;
+        this.blaster.updateBlasterHorizontalPosition(this.horizontalPosition);
+        this.blaster.updateBlasterVerticalPosition(this.horizontalPosition);
+    }
     updatePosition() {
         this.updateMoveLeft();
         this.updateMoveRight();
@@ -274,7 +320,7 @@ class Enemy extends MoveableEntity {
     updateMoveRight() {
         if (!this.isMovingRight)
             return;
-        if (this.horizontalPosition + Enemy.WIDTH >= this.maxRightPosition) {
+        if (this.horizontalPosition + this.WIDTH >= this.maxRightPosition) {
             this.stopMovingRight();
             this.setNextVerticalPositionToMoveDown();
             this.startMovingDown();
@@ -289,26 +335,24 @@ class Enemy extends MoveableEntity {
             return;
         if (this.verticalPosition < this.nextVerticalPositonToMoveDown) {
             this.moveDown(this.movementSpeed);
-            this.blaster.updateBlasterVerticalPosition(this.verticalPosition + Enemy.HEIGHT);
+            this.blaster.updateBlasterVerticalPosition(this.verticalPosition + this.HEIGHT);
             return;
         }
         this.stopMovingDown();
         if (this.horizontalPosition <= this.maxLeftPosition) {
             this.startMovingRight();
         }
-        if (this.horizontalPosition + Enemy.WIDTH >= this.maxRightPosition) {
+        if (this.horizontalPosition + this.WIDTH >= this.maxRightPosition) {
             this.startMovingLeft();
         }
     }
     setNextVerticalPositionToMoveDown() {
-        this.nextVerticalPositonToMoveDown += Enemy.HEIGHT;
+        this.nextVerticalPositonToMoveDown += this.HEIGHT;
     }
     getRGBAColor() {
         return `rgba(${this.currentColor.red}, ${this.currentColor.green}, ${this.currentColor.blue}, ${this.currentColor.brightness})`;
     }
 }
-Enemy.HEIGHT = 25;
-Enemy.WIDTH = 25;
 class EnemyFactory {
     constructor() {
         this.weakEnemyStats = {
@@ -329,9 +373,9 @@ class EnemyFactory {
             this.instance = new EnemyFactory();
         return this.instance;
     }
-    buildNewEnemy(enemyType, startingVerticalPosition, startingHorizontalPosition, minLeftPositionToMove, maxRightPositionToMove) {
+    buildNewEnemy(enemyType) {
         const enemyConfig = this.getConfigForEnemyType(enemyType);
-        return new Enemy(startingVerticalPosition, startingHorizontalPosition, minLeftPositionToMove, maxRightPositionToMove, enemyConfig);
+        return new Enemy(enemyConfig);
     }
     getConfigForEnemyType(enemyType) {
         switch (enemyType) {
@@ -366,10 +410,7 @@ class EnemyGroup {
         if (index < 0 || this.enemies.length <= index)
             return null;
         const newCoolDownPeriod = this.cooldownPeriod - this.CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS;
-        this.cooldownPeriod =
-            newCoolDownPeriod < this.MIN_COOLDOWN_PERIOD_MILLISECONDS
-                ? this.MIN_COOLDOWN_PERIOD_MILLISECONDS
-                : newCoolDownPeriod;
+        this.cooldownPeriod = Math.max(newCoolDownPeriod, this.MIN_COOLDOWN_PERIOD_MILLISECONDS);
         return this.enemies.splice(index, 1)[0];
     }
     addEnemies(enemies) {
@@ -379,12 +420,14 @@ class EnemyGroup {
             .map((enemyList) => enemyList.length)
             .reduce((acc, length) => Math.max(acc, length), 0);
         enemies.forEach((row, rowIndex) => {
-            const verticalPosition = rowIndex * (Enemy.HEIGHT + this.ENEMY_SPACING);
-            const horizontalOffset = this.calculateRowOffset(row.length);
             row.forEach((enemyType, colIndex) => {
-                const horizontalPosition = colIndex * (Enemy.WIDTH + this.ENEMY_SPACING);
-                const { minLeftPositionToMove, maxRightPositionToMove } = this.getMaxPositionsToMove(maxEnemiesInARow, row.length, colIndex);
-                const enemy = EnemyFactory.getInstance().buildNewEnemy(enemyType, verticalPosition, horizontalPosition + horizontalOffset, minLeftPositionToMove, maxRightPositionToMove);
+                const enemy = EnemyFactory.getInstance().buildNewEnemy(enemyType);
+                const { minLeftPositionToMove, maxRightPositionToMove } = this.getMaxPositionsToMove(maxEnemiesInARow, enemy.getWidth(), row.length, colIndex);
+                enemy.setMaxHorizontalBounds(minLeftPositionToMove, maxRightPositionToMove);
+                const verticalPosition = rowIndex * (enemy.getHeight() + this.ENEMY_SPACING);
+                const horizontalOffset = this.calculateRowOffset(enemy.getWidth(), row.length);
+                const horizontalPosition = colIndex * (enemy.getWidth() + this.ENEMY_SPACING);
+                enemy.setStartingPosition(verticalPosition, horizontalPosition + horizontalOffset);
                 enemy.startMovingLeft();
                 this.enemies.push(enemy);
             });
@@ -401,26 +444,26 @@ class EnemyGroup {
         const enemyIndex = MathHelper.getRandomInt(0, this.enemies.length);
         return this.enemies[enemyIndex].getNextShot();
     }
-    getMaxPositionsToMove(maxEnemiesInARow, rowLength, enemyIndex) {
-        const minLeftPositionToMove = this.calculateMinLeftPositionToMove(maxEnemiesInARow, rowLength, enemyIndex);
-        const maxRightPositionToMove = this.calculateMaxRightPositionToMove(maxEnemiesInARow, rowLength, enemyIndex);
+    getMaxPositionsToMove(maxEnemiesInARow, enemyWidth, rowLength, enemyIndex) {
+        const minLeftPositionToMove = this.calculateMinLeftPositionToMove(maxEnemiesInARow, enemyWidth, rowLength, enemyIndex);
+        const maxRightPositionToMove = this.calculateMaxRightPositionToMove(maxEnemiesInARow, enemyWidth, rowLength, enemyIndex);
         return { minLeftPositionToMove, maxRightPositionToMove };
     }
-    calculateMaxRightPositionToMove(maxEnemiesInARow, rowLength, enemyIndex) {
+    calculateMaxRightPositionToMove(maxEnemiesInARow, enemyWidth, rowLength, enemyIndex) {
         const spacesToRight = (maxEnemiesInARow - rowLength) / 2 + (rowLength - enemyIndex - 1);
-        const maxRightPositionToMove = spacesToRight * Enemy.WIDTH +
+        const maxRightPositionToMove = spacesToRight * enemyWidth +
             spacesToRight * this.ENEMY_SPACING +
             this.ENEMY_SPACING;
         return this.canvas.width - maxRightPositionToMove;
     }
-    calculateMinLeftPositionToMove(maxEnemiesInARow, rowLength, enemyIndex) {
+    calculateMinLeftPositionToMove(maxEnemiesInARow, enemyWidth, rowLength, enemyIndex) {
         const spacesToLeft = (maxEnemiesInARow - rowLength) / 2 + enemyIndex;
-        return (spacesToLeft * Enemy.WIDTH +
+        return (spacesToLeft * enemyWidth +
             spacesToLeft * this.ENEMY_SPACING +
             this.ENEMY_SPACING);
     }
-    calculateRowOffset(rowLength) {
-        const maxWidthOfRow = rowLength * Enemy.WIDTH + (rowLength - 1) * this.ENEMY_SPACING;
+    calculateRowOffset(enemyWidth, rowLength) {
+        const maxWidthOfRow = rowLength * enemyWidth + (rowLength - 1) * this.ENEMY_SPACING;
         return Math.floor(this.canvas.width / 2) - Math.floor(maxWidthOfRow / 2);
     }
 }
@@ -609,18 +652,20 @@ class CollisionDetectionService {
         if (!object1 || !object2) {
             return false;
         }
-        if (object1.horizontalPosition + object1.WIDTH <
-            object2.horizontalPosition) {
+        if (object1.getHorizontalPosition() + object1.getWidth() <
+            object2.getHorizontalPosition()) {
             return false;
         }
-        if (object2.horizontalPosition + object2.WIDTH <
-            object1.horizontalPosition) {
+        if (object2.getHorizontalPosition() + object2.getWidth() <
+            object1.getHorizontalPosition()) {
             return false;
         }
-        if (object1.verticalPosition + object1.HEIGHT < object2.verticalPosition) {
+        if (object1.getVerticalPosition() + object1.getHeight() <
+            object2.getVerticalPosition()) {
             return false;
         }
-        if (object2.verticalPosition + object2.HEIGHT < object1.verticalPosition) {
+        if (object2.getVerticalPosition() + object2.getHeight() <
+            object1.getVerticalPosition()) {
             return false;
         }
         return true;
@@ -875,23 +920,21 @@ class LevelService {
     }
 }
 class Blaster {
-    constructor(initialVerticalPosition, ownerHorizontalPosition, ownerWidth) {
+    constructor(ownerWidth) {
         this.BULLET_SPEED = 2;
         this.MAX_COOLDOWN_PERIOD_MILLISECONDS = 500;
         this.MIN_COOLDOWN_PERIOD_MILLISECONDS = 100;
         this.CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS = 25;
+        this.verticalPosition = 0;
+        this.horizontalPosition = 0;
         this.timeLastShotFired = 0;
         this.cooldownPeriod = this.MAX_COOLDOWN_PERIOD_MILLISECONDS;
         this.isShootingDown = false;
         this.ownerWidth = ownerWidth;
-        this.verticalPosition = initialVerticalPosition;
-        this.horizontalPosition = 0;
-        this.updateBlasterHorizontalPosition(ownerHorizontalPosition);
     }
     shoot() {
         const currentTime = Date.now();
-        const shouldFire = currentTime - this.timeLastShotFired >= this.cooldownPeriod;
-        if (!shouldFire)
+        if (!this.shouldFire(currentTime))
             return null;
         this.timeLastShotFired = currentTime;
         const bullet = new BlasterBullet(this.verticalPosition, this.horizontalPosition, this.BULLET_SPEED);
@@ -918,11 +961,8 @@ class Blaster {
                 : newCoolDown;
     }
     updateBlasterHorizontalPosition(ownerHorizontalPosition) {
-        const blasterHorizontalOffset = Math.floor(BlasterBullet.WIDTH / 2);
         this.horizontalPosition =
-            ownerHorizontalPosition +
-                Math.floor(this.ownerWidth / 2) -
-                blasterHorizontalOffset;
+            ownerHorizontalPosition + Math.floor(this.ownerWidth / 2);
     }
     updateBlasterVerticalPosition(ownerVerticalPosition) {
         this.verticalPosition = ownerVerticalPosition;
@@ -930,12 +970,21 @@ class Blaster {
     shootDownwards() {
         this.isShootingDown = true;
     }
+    shouldFire(currentTime) {
+        return currentTime - this.timeLastShotFired >= this.cooldownPeriod;
+    }
 }
 // @ts-ignore
 class BlasterBullet extends MoveableEntity {
-    constructor(initialVerticalPosition, initialHorizontalPosition, bulletSpeed) {
-        super(initialVerticalPosition, initialHorizontalPosition, BlasterBullet.HEIGHT, BlasterBullet.WIDTH);
+    constructor(verticalPosition, horizontalPosition, bulletSpeed) {
+        super();
         this.COLOR = "red";
+        this.BULLET_HEIGHT = 5;
+        this.BULLET_WIDTH = 5;
+        this.HEIGHT = this.BULLET_HEIGHT;
+        this.WIDTH = this.BULLET_WIDTH;
+        this.verticalPosition = verticalPosition;
+        this.horizontalPosition = horizontalPosition;
         this.bulletSpeed = bulletSpeed;
     }
     getDamageAmount() {
@@ -945,11 +994,11 @@ class BlasterBullet extends MoveableEntity {
         this.updatePosition();
         const previousFillStyle = this.canvas.canvasContext.fillStyle;
         this.canvas.canvasContext.fillStyle = this.COLOR;
-        this.canvas.canvasContext.fillRect(this.horizontalPosition, this.verticalPosition, BlasterBullet.WIDTH, BlasterBullet.HEIGHT);
+        this.canvas.canvasContext.fillRect(this.horizontalPosition, this.verticalPosition, this.WIDTH, this.HEIGHT);
         this.canvas.canvasContext.fillStyle = previousFillStyle;
     }
     isBulletOffScreen() {
-        const isAboveCanvas = this.verticalPosition <= -BlasterBullet.HEIGHT;
+        const isAboveCanvas = this.verticalPosition <= -this.HEIGHT;
         const isBelowCanvas = this.verticalPosition >= this.canvas.height;
         return isAboveCanvas || isBelowCanvas;
     }
@@ -962,8 +1011,6 @@ class BlasterBullet extends MoveableEntity {
         }
     }
 }
-BlasterBullet.HEIGHT = 5;
-BlasterBullet.WIDTH = 5;
 BlasterBullet.DAMAGE = 5;
 class SpaceInvaders {
     constructor() {
@@ -977,9 +1024,7 @@ class SpaceInvaders {
         this.renderMaximumMilliseconds = Math.floor(millisecondsPerFrame) + 1;
         this.renderMinimumMilliseconds = Math.floor(millisecondsPerFrame) - 1;
         this.canvas = CanvasInstance.getInstance();
-        const playerVerticalPosition = Player.getInitialVerticalPosition(this.canvas.height);
-        const playerHorizontalPosition = Player.getInitialHorizontalPosition(this.canvas.height);
-        this.player = new Player(playerVerticalPosition, playerHorizontalPosition);
+        this.player = new Player();
         this.enemyGroup = new EnemyGroup();
         this.keyboardControls = new KeyboardControls(this.player, () => {
             this.startGame();
