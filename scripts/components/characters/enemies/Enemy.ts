@@ -100,7 +100,7 @@ class Enemy extends MoveableEntity {
     this.nextVerticalPositonToMoveDown = verticalPosition;
 
     this.blaster.updateBlasterHorizontalPosition(this.horizontalPosition);
-    this.blaster.updateBlasterVerticalPosition(this.horizontalPosition);
+    this.blaster.updateBlasterVerticalPosition(this.verticalPosition);
   }
 
   private updatePosition() {
