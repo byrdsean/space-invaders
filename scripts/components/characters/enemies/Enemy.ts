@@ -23,6 +23,9 @@ class Enemy extends MoveableEntity {
   private readonly blaster: Blaster;
   private readonly pointsForDefeating: number;
 
+  private readonly ENEMY_HEIGHT = 25;
+  private readonly ENEMY_WIDTH = 25;
+
   private maxLeftPosition = 0;
   private maxRightPosition = 0;
   private nextVerticalPositonToMoveDown = 0;
@@ -32,9 +35,8 @@ class Enemy extends MoveableEntity {
   constructor(config: EnemyConfig) {
     super();
 
-    // TODO: replace with const variables
-    this.HEIGHT = 25;
-    this.WIDTH = 25;
+    this.HEIGHT = this.ENEMY_HEIGHT;
+    this.WIDTH = this.ENEMY_WIDTH;
 
     this.pointsForDefeating = config.pointsForDefeating;
 

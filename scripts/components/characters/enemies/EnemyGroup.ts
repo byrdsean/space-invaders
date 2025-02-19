@@ -33,11 +33,10 @@ class EnemyGroup {
     const newCoolDownPeriod =
       this.cooldownPeriod - this.CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS;
 
-    // TODO: refactor with Math.max()
-    this.cooldownPeriod =
-      newCoolDownPeriod < this.MIN_COOLDOWN_PERIOD_MILLISECONDS
-        ? this.MIN_COOLDOWN_PERIOD_MILLISECONDS
-        : newCoolDownPeriod;
+    this.cooldownPeriod = Math.max(
+      newCoolDownPeriod,
+      this.MIN_COOLDOWN_PERIOD_MILLISECONDS
+    );
 
     return this.enemies.splice(index, 1)[0];
   }

@@ -3,6 +3,9 @@ class BlasterBullet extends MoveableEntity {
   private static DAMAGE = 5;
   private readonly COLOR = "red";
 
+  private readonly BULLET_HEIGHT = 5;
+  private readonly BULLET_WIDTH = 5;
+
   private readonly bulletSpeed: number;
 
   constructor(
@@ -12,13 +15,12 @@ class BlasterBullet extends MoveableEntity {
   ) {
     super();
 
+    this.HEIGHT = this.BULLET_HEIGHT;
+    this.WIDTH = this.BULLET_WIDTH;
+
     this.verticalPosition = verticalPosition;
     this.horizontalPosition = horizontalPosition;
     this.bulletSpeed = bulletSpeed;
-
-    // TODO: replace with const variables
-    this.HEIGHT = 5;
-    this.WIDTH = 5;
   }
 
   getDamageAmount(): number {

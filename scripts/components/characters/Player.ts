@@ -6,7 +6,8 @@ class Player extends MoveableEntity {
   private readonly SPACES_TO_MOVE = 2;
 
   private readonly SPRITE_LOCATION = "./dist/images/player.png";
-  private readonly SPRITE_MAX_HEIGHT = 50;
+  private readonly SPRITE_HEIGHT = 50;
+  private readonly SPRITE_WIDTH = 59;
 
   private readonly healthManagerService: HealthManagerService;
 
@@ -17,10 +18,7 @@ class Player extends MoveableEntity {
   constructor() {
     super();
 
-    const sprite = this.setSprite();
-    this.sprite = sprite.image;
-    this.HEIGHT = sprite.height;
-    this.WIDTH = sprite.width;
+    this.sprite = this.setSprite();
 
     this.setStartingPosition();
 
@@ -47,17 +45,16 @@ class Player extends MoveableEntity {
     this.updateHorizontalPosition();
     this.updateVerticalPosition();
 
-    // TODO: remove comments
     this.canvas.canvasContext.drawImage(
       this.sprite,
-      0, //source x position
-      0, //source y position
-      this.sprite.width, //source width
-      this.sprite.height, //source height
-      this.horizontalPosition, //destination x position
-      this.verticalPosition, //destination y position
-      this.WIDTH, //destiination width
-      this.HEIGHT //destination height
+      0,
+      0,
+      this.WIDTH,
+      this.HEIGHT,
+      this.horizontalPosition,
+      this.verticalPosition,
+      this.WIDTH,
+      this.HEIGHT
     );
   }
 
@@ -123,20 +120,14 @@ class Player extends MoveableEntity {
     }
   }
 
-  private setSprite(): Sprite {
+  private setSprite(): HTMLImageElement {
     const sprite = new Image();
     sprite.src = this.SPRITE_LOCATION;
 
-    const maxHeight = Math.min(this.SPRITE_MAX_HEIGHT, sprite.height);
-    const aspectRatio =
-      maxHeight < sprite.height ? maxHeight / sprite.height : 1;
-    const maxWidth = sprite.width * aspectRatio;
+    this.WIDTH = this.SPRITE_WIDTH;
+    this.HEIGHT = this.SPRITE_HEIGHT;
 
-    return {
-      image: sprite,
-      width: maxWidth,
-      height: maxHeight,
-    };
+    return sprite;
   }
 
   private setStartingPosition() {
@@ -146,14 +137,6 @@ class Player extends MoveableEntity {
     this.horizontalPosition = this.getStartingHorizontalPosition(
       this.canvas.height
     );
-
-    console.log({
-      verticalPosition: this.verticalPosition,
-      horizontalPosition: this.horizontalPosition,
-      canvasHeight: this.canvas.height,
-      height: this.HEIGHT,
-      width: this.WIDTH,
-    });
   }
 
   protected override moveDown(unitsToMove: number) {

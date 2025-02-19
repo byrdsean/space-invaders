@@ -129,12 +129,10 @@ class Player extends MoveableEntity {
         this.MAX_VERTICAL_SPACES_TO_MOVE = 75;
         this.SPACES_TO_MOVE = 2;
         this.SPRITE_LOCATION = "./dist/images/player.png";
-        this.SPRITE_MAX_HEIGHT = 50;
+        this.SPRITE_HEIGHT = 50;
+        this.SPRITE_WIDTH = 59;
         this.isShooting = false;
-        const sprite = this.setSprite();
-        this.sprite = sprite.image;
-        this.HEIGHT = sprite.height;
-        this.WIDTH = sprite.width;
+        this.sprite = this.setSprite();
         this.setStartingPosition();
         this.blaster = new Blaster(this.WIDTH);
         this.blaster.updateBlasterHorizontalPosition(this.horizontalPosition);
@@ -152,16 +150,7 @@ class Player extends MoveableEntity {
     draw() {
         this.updateHorizontalPosition();
         this.updateVerticalPosition();
-        // TODO: remove comments
-        this.canvas.canvasContext.drawImage(this.sprite, 0, //source x position
-        0, //source y position
-        this.sprite.width, //source width
-        this.sprite.height, //source height
-        this.horizontalPosition, //destination x position
-        this.verticalPosition, //destination y position
-        this.WIDTH, //destiination width
-        this.HEIGHT //destination height
-        );
+        this.canvas.canvasContext.drawImage(this.sprite, 0, 0, this.WIDTH, this.HEIGHT, this.horizontalPosition, this.verticalPosition, this.WIDTH, this.HEIGHT);
     }
     getNextShot() {
         return this.isShooting ? this.blaster.shoot() : null;
@@ -217,25 +206,13 @@ class Player extends MoveableEntity {
     setSprite() {
         const sprite = new Image();
         sprite.src = this.SPRITE_LOCATION;
-        const maxHeight = Math.min(this.SPRITE_MAX_HEIGHT, sprite.height);
-        const aspectRatio = maxHeight < sprite.height ? maxHeight / sprite.height : 1;
-        const maxWidth = sprite.width * aspectRatio;
-        return {
-            image: sprite,
-            width: maxWidth,
-            height: maxHeight,
-        };
+        this.WIDTH = this.SPRITE_WIDTH;
+        this.HEIGHT = this.SPRITE_HEIGHT;
+        return sprite;
     }
     setStartingPosition() {
         this.verticalPosition = this.getStartingVerticalPosition(this.canvas.height);
         this.horizontalPosition = this.getStartingHorizontalPosition(this.canvas.height);
-        console.log({
-            verticalPosition: this.verticalPosition,
-            horizontalPosition: this.horizontalPosition,
-            canvasHeight: this.canvas.height,
-            height: this.HEIGHT,
-            width: this.WIDTH,
-        });
     }
     moveDown(unitsToMove) {
         const newVerticalPosition = this.verticalPosition + unitsToMove;
@@ -270,14 +247,15 @@ class Enemy extends MoveableEntity {
             blue: 0,
             brightness: 1,
         };
+        this.ENEMY_HEIGHT = 25;
+        this.ENEMY_WIDTH = 25;
         this.maxLeftPosition = 0;
         this.maxRightPosition = 0;
         this.nextVerticalPositonToMoveDown = 0;
         this.movementSpeed = 1;
         this.currentColor = this.BASE_COLOR;
-        // TODO: replace with const variables
-        this.HEIGHT = 25;
-        this.WIDTH = 25;
+        this.HEIGHT = this.ENEMY_HEIGHT;
+        this.WIDTH = this.ENEMY_WIDTH;
         this.pointsForDefeating = config.pointsForDefeating;
         this.healthManagerService = new HealthManagerService(config.maxHealth);
         this.blaster = new Blaster(this.verticalPosition + this.HEIGHT);
@@ -432,11 +410,7 @@ class EnemyGroup {
         if (index < 0 || this.enemies.length <= index)
             return null;
         const newCoolDownPeriod = this.cooldownPeriod - this.CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS;
-        // TODO: refactor with Math.max()
-        this.cooldownPeriod =
-            newCoolDownPeriod < this.MIN_COOLDOWN_PERIOD_MILLISECONDS
-                ? this.MIN_COOLDOWN_PERIOD_MILLISECONDS
-                : newCoolDownPeriod;
+        this.cooldownPeriod = Math.max(newCoolDownPeriod, this.MIN_COOLDOWN_PERIOD_MILLISECONDS);
         return this.enemies.splice(index, 1)[0];
     }
     addEnemies(enemies) {
@@ -672,71 +646,6 @@ class KeyboardControls {
         });
     }
 }
-// class AssetService {
-//   private readonly PLAYER_IMAGE_PATH = "./dist/images/player.png";
-//   constructor() {}
-//   async test(): Promise<[]> {
-//     const playerPromise = this.loadPlayerImage();
-//     const playerPromise2 = this.loadPlayerImage();
-//     const p = await Promise.all([playerPromise, playerPromise2]).then(
-//       (values) => {
-//         return values;
-//       }
-//     );
-//     //   .catch((reason) => {
-//     //     return [];
-//     //   });
-//     return [];
-//   }
-//   async loadPlayerImage(): Promise<HTMLImageElement> {
-//     return new Promise((resolve, reject) => {
-//       const sprite = new Image();
-//       sprite.onload = () => resolve(sprite);
-//       sprite.src = this.PLAYER_IMAGE_PATH;
-//     });
-//   }
-// }
-// //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all
-//  ============================================================
-// TODO: Image() needs time to load. figure out a way to give it time to complete
-//   private setSprite(): Sprite {
-//     const sprite = new Image();
-//     sprite.src = this.SPRITE_LOCATION;
-//     // console.log("start");
-//     // let lock: boolean = true;
-//     // setTimeout(() => {
-//     //   lock = false;
-//     //   console.log(`set lock to: ${lock}`);
-//     // }, 1000);
-//     // // while (lock) {
-//     // //   //wait
-//     // // }
-//     // console.log("end");
-//     /*
-// https://www.geeksforgeeks.org/how-to-wait-n-seconds-in-javascript/
-// https://www.google.com/search?q=how+to+call+async+function+in+typescript+class+constructor&sca_esv=a7efe55fedd440ee&rlz=1C1CHBD_enUS911US911&ei=jxisZ-fBJNir5NoP6_vqSA&ved=0ahUKEwinxZTOm72LAxXYFVkFHeu9GgkQ4dUDCBA&uact=5&oq=how+to+call+async+function+in+typescript+class+constructor&gs_lp=Egxnd3Mtd2l6LXNlcnAiOmhvdyB0byBjYWxsIGFzeW5jIGZ1bmN0aW9uIGluIHR5cGVzY3JpcHQgY2xhc3MgY29uc3RydWN0b3IyBRAhGKABMgUQIRigATIFECEYoAEyBRAhGKsCMgUQIRirAjIFECEYqwJIjVtQtydYhVlwAngBkAEAmAF1oAGmDKoBBDE2LjK4AQPIAQD4AQGYAhOgAocMwgIKEAAYsAMY1gQYR8ICChAhGKABGMMEGArCAggQIRigARjDBMICBRAhGJ8FmAMAiAYBkAYIkgcEMTcuMqAHmGA&sclient=gws-wiz-serp
-// https://www.google.com/search?q=javascript+HtmlImageElement+wait+to+load+image&rlz=1C1CHBD_enUS911US911&oq=javascript+HtmlImageElement+wait+to+load+image&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIHCAEQIRigATIHCAIQIRigATIHCAMQIRigATIHCAQQIRirAjIHCAUQIRirAjIHCAYQIRiPAtIBCTExMzk5ajBqN6gCALACAA&sourceid=chrome&ie=UTF-8&sei=qBasZ9SZIJ2v5NoPj-rI2AE
-// */
-//     const spriteHeight = sprite.height;
-//     const spriteWidth = sprite.width;
-//     console.log({ sprite });
-//     const maxHeight = Math.min(this.SPRITE_MAX_HEIGHT, spriteHeight);
-//     console.log({ spriteH: spriteHeight });
-//     const aspectRatio = maxHeight < spriteHeight ? maxHeight / spriteHeight : 1;
-//     console.log({ aspectRatio });
-//     const maxWidth = spriteWidth * aspectRatio;
-//     console.log({ spriteW: spriteWidth });
-//     console.log({
-//       image: sprite,
-//       width: maxWidth,
-//       height: maxHeight,
-//     });
-//     return {
-//       image: sprite,
-//       width: maxWidth,
-//       height: maxHeight,
-//     };
-//   }
 class CollisionDetectionService {
     constructor() { }
     hasCollided(object1, object2) {
@@ -1070,12 +979,13 @@ class BlasterBullet extends MoveableEntity {
     constructor(verticalPosition, horizontalPosition, bulletSpeed) {
         super();
         this.COLOR = "red";
+        this.BULLET_HEIGHT = 5;
+        this.BULLET_WIDTH = 5;
+        this.HEIGHT = this.BULLET_HEIGHT;
+        this.WIDTH = this.BULLET_WIDTH;
         this.verticalPosition = verticalPosition;
         this.horizontalPosition = horizontalPosition;
         this.bulletSpeed = bulletSpeed;
-        // TODO: replace with const variables
-        this.HEIGHT = 5;
-        this.WIDTH = 5;
     }
     getDamageAmount() {
         return BlasterBullet.DAMAGE;
