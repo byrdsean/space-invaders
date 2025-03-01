@@ -1,4 +1,3 @@
-// @ts-ignore
 class BlasterBullet extends MoveableEntity {
   private static DAMAGE = 5;
   private readonly COLOR = "red";

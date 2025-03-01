@@ -121,7 +121,6 @@ class MoveableEntity {
         this.isMovingDown = false;
     }
 }
-// @ts-ignore
 class Player extends MoveableEntity {
     constructor() {
         super();
@@ -225,48 +224,23 @@ class Player extends MoveableEntity {
         this.verticalPosition = Math.max(newVerticalPosition, maxUpwardPosition);
     }
 }
-// @ts-ignore
 class Enemy extends MoveableEntity {
     constructor(config) {
         super();
-        this.BASE_COLOR = {
-            red: 117,
-            green: 27,
-            blue: 124,
-            brightness: 1,
-        };
-        this.HALF_DAMAGE_COLOR = {
-            red: 196,
-            green: 14,
-            blue: 64,
-            brightness: 1,
-        };
-        this.DANGER_COLOR = {
-            red: 255,
-            green: 0,
-            blue: 0,
-            brightness: 1,
-        };
-        this.ENEMY_HEIGHT = 25;
-        this.ENEMY_WIDTH = 25;
         this.maxLeftPosition = 0;
         this.maxRightPosition = 0;
         this.nextVerticalPositonToMoveDown = 0;
         this.movementSpeed = 1;
-        this.currentColor = this.BASE_COLOR;
-        this.HEIGHT = this.ENEMY_HEIGHT;
-        this.WIDTH = this.ENEMY_WIDTH;
         this.pointsForDefeating = config.pointsForDefeating;
+        this.spriteLocation = config.spriteLocation;
+        this.sprite = this.setSprite(config.spriteWidth, config.spriteHeight);
         this.healthManagerService = new HealthManagerService(config.maxHealth);
         this.blaster = new Blaster(this.verticalPosition + this.HEIGHT);
         this.blaster.shootDownwards();
     }
     draw() {
         this.updatePosition();
-        const previousFillStyle = this.canvas.canvasContext.fillStyle;
-        this.canvas.canvasContext.fillStyle = this.getRGBAColor();
-        this.canvas.canvasContext.fillRect(this.horizontalPosition, this.verticalPosition, this.WIDTH, this.HEIGHT);
-        this.canvas.canvasContext.fillStyle = previousFillStyle;
+        this.canvas.canvasContext.drawImage(this.sprite, 0, 0, this.WIDTH, this.HEIGHT, this.horizontalPosition, this.verticalPosition, this.WIDTH, this.HEIGHT);
     }
     getNextShot() {
         return this.blaster.shoot();
@@ -278,12 +252,6 @@ class Enemy extends MoveableEntity {
         this.healthManagerService.decrementHealth(removeValue);
         const halfHealth = Math.floor(this.healthManagerService.getMaxHealth() / 2);
         const thirdHealth = Math.floor(this.healthManagerService.getMaxHealth() / 3);
-        if (this.healthManagerService.getHealth() <= halfHealth) {
-            this.currentColor = this.HALF_DAMAGE_COLOR;
-        }
-        else if (this.healthManagerService.getHealth() <= thirdHealth) {
-            this.currentColor = this.DANGER_COLOR;
-        }
     }
     getPointsForDefeating() {
         return this.pointsForDefeating;
@@ -349,8 +317,12 @@ class Enemy extends MoveableEntity {
     setNextVerticalPositionToMoveDown() {
         this.nextVerticalPositonToMoveDown += this.HEIGHT;
     }
-    getRGBAColor() {
-        return `rgba(${this.currentColor.red}, ${this.currentColor.green}, ${this.currentColor.blue}, ${this.currentColor.brightness})`;
+    setSprite(width, height) {
+        const sprite = new Image();
+        sprite.src = this.spriteLocation;
+        this.WIDTH = width;
+        this.HEIGHT = height;
+        return sprite;
     }
 }
 class EnemyFactory {
@@ -358,14 +330,23 @@ class EnemyFactory {
         this.weakEnemyStats = {
             maxHealth: 5,
             pointsForDefeating: 1,
+            spriteLocation: "./dist/images/weak_alien.png",
+            spriteWidth: 30,
+            spriteHeight: 30,
         };
         this.mediumEnemyStats = {
             maxHealth: 15,
             pointsForDefeating: 3,
+            spriteLocation: "./dist/images/medium_alien.png",
+            spriteWidth: 30,
+            spriteHeight: 30,
         };
         this.strongEnemyStats = {
             maxHealth: 30,
             pointsForDefeating: 6,
+            spriteLocation: "./dist/images/strong_alien.png",
+            spriteWidth: 30,
+            spriteHeight: 30,
         };
     }
     static getInstance() {
@@ -481,6 +462,10 @@ EnemyLevels.levels = [
                 EnemyType.WEAK,
                 EnemyType.WEAK,
                 EnemyType.WEAK,
+            ],
+            [
+                EnemyType.WEAK,
+                EnemyType.WEAK,
                 EnemyType.WEAK,
                 EnemyType.WEAK,
                 EnemyType.WEAK,
@@ -493,16 +478,8 @@ EnemyLevels.levels = [
                 EnemyType.WEAK,
                 EnemyType.WEAK,
                 EnemyType.WEAK,
-                EnemyType.WEAK,
-                EnemyType.WEAK,
-                EnemyType.WEAK,
-                EnemyType.WEAK,
             ],
             [
-                EnemyType.WEAK,
-                EnemyType.WEAK,
-                EnemyType.WEAK,
-                EnemyType.WEAK,
                 EnemyType.WEAK,
                 EnemyType.WEAK,
                 EnemyType.WEAK,
@@ -522,28 +499,40 @@ EnemyLevels.levels = [
                 EnemyType.MEDIUM,
                 EnemyType.MEDIUM,
                 EnemyType.MEDIUM,
+            ],
+            [
+                EnemyType.WEAK,
                 EnemyType.MEDIUM,
+                EnemyType.WEAK,
                 EnemyType.MEDIUM,
-                EnemyType.MEDIUM,
+                EnemyType.WEAK,
                 EnemyType.MEDIUM,
             ],
             [
                 EnemyType.MEDIUM,
+                EnemyType.WEAK,
                 EnemyType.MEDIUM,
+                EnemyType.WEAK,
                 EnemyType.MEDIUM,
-                EnemyType.MEDIUM,
-                EnemyType.MEDIUM,
-                EnemyType.MEDIUM,
-                EnemyType.MEDIUM,
-                EnemyType.MEDIUM,
-                EnemyType.MEDIUM,
-                EnemyType.MEDIUM,
+                EnemyType.WEAK,
             ],
             [
                 EnemyType.WEAK,
+                EnemyType.MEDIUM,
                 EnemyType.WEAK,
+                EnemyType.MEDIUM,
                 EnemyType.WEAK,
+                EnemyType.MEDIUM,
+            ],
+            [
+                EnemyType.MEDIUM,
                 EnemyType.WEAK,
+                EnemyType.MEDIUM,
+                EnemyType.WEAK,
+                EnemyType.MEDIUM,
+                EnemyType.WEAK,
+            ],
+            [
                 EnemyType.WEAK,
                 EnemyType.WEAK,
                 EnemyType.WEAK,
@@ -563,10 +552,38 @@ EnemyLevels.levels = [
                 EnemyType.STRONG,
                 EnemyType.STRONG,
                 EnemyType.STRONG,
+            ],
+            [
+                EnemyType.MEDIUM,
+                EnemyType.STRONG,
+                EnemyType.MEDIUM,
+                EnemyType.STRONG,
+                EnemyType.MEDIUM,
+                EnemyType.STRONG,
+            ],
+            [
+                EnemyType.STRONG,
+                EnemyType.MEDIUM,
+                EnemyType.STRONG,
+                EnemyType.MEDIUM,
+                EnemyType.STRONG,
+                EnemyType.MEDIUM,
+            ],
+            [
                 EnemyType.STRONG,
                 EnemyType.STRONG,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
                 EnemyType.STRONG,
                 EnemyType.STRONG,
+            ],
+            [
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
+                EnemyType.STRONG,
+                EnemyType.STRONG,
+                EnemyType.MEDIUM,
+                EnemyType.MEDIUM,
             ],
             [
                 EnemyType.MEDIUM,
@@ -575,22 +592,22 @@ EnemyLevels.levels = [
                 EnemyType.MEDIUM,
                 EnemyType.MEDIUM,
                 EnemyType.MEDIUM,
+            ],
+            [
+                EnemyType.WEAK,
                 EnemyType.MEDIUM,
+                EnemyType.WEAK,
                 EnemyType.MEDIUM,
-                EnemyType.MEDIUM,
+                EnemyType.WEAK,
                 EnemyType.MEDIUM,
             ],
             [
                 EnemyType.MEDIUM,
+                EnemyType.WEAK,
                 EnemyType.MEDIUM,
+                EnemyType.WEAK,
                 EnemyType.MEDIUM,
-                EnemyType.MEDIUM,
-                EnemyType.MEDIUM,
-                EnemyType.MEDIUM,
-                EnemyType.MEDIUM,
-                EnemyType.MEDIUM,
-                EnemyType.MEDIUM,
-                EnemyType.MEDIUM,
+                EnemyType.WEAK,
             ],
         ],
     },
@@ -974,7 +991,6 @@ class Blaster {
         return currentTime - this.timeLastShotFired >= this.cooldownPeriod;
     }
 }
-// @ts-ignore
 class BlasterBullet extends MoveableEntity {
     constructor(verticalPosition, horizontalPosition, bulletSpeed) {
         super();
