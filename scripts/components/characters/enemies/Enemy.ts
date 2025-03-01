@@ -1,44 +1,23 @@
-// @ts-ignore
 class Enemy extends MoveableEntity {
-  private readonly BASE_COLOR: ColorRGBA = {
-    red: 117,
-    green: 27,
-    blue: 124,
-    brightness: 1,
-  };
-  private readonly HALF_DAMAGE_COLOR: ColorRGBA = {
-    red: 196,
-    green: 14,
-    blue: 64,
-    brightness: 1,
-  };
-  private readonly DANGER_COLOR: ColorRGBA = {
-    red: 255,
-    green: 0,
-    blue: 0,
-    brightness: 1,
-  };
-
   private readonly healthManagerService: HealthManagerService;
   private readonly blaster: Blaster;
   private readonly pointsForDefeating: number;
 
-  private readonly ENEMY_HEIGHT = 25;
-  private readonly ENEMY_WIDTH = 25;
+  private readonly spriteLocation: string;
+  private sprite: HTMLImageElement;
 
   private maxLeftPosition = 0;
   private maxRightPosition = 0;
   private nextVerticalPositonToMoveDown = 0;
   private movementSpeed = 1;
-  private currentColor: ColorRGBA = this.BASE_COLOR;
 
   constructor(config: EnemyConfig) {
     super();
 
-    this.HEIGHT = this.ENEMY_HEIGHT;
-    this.WIDTH = this.ENEMY_WIDTH;
-
     this.pointsForDefeating = config.pointsForDefeating;
+
+    this.spriteLocation = config.spriteLocation;
+    this.sprite = this.setSprite(config.spriteWidth, config.spriteHeight);
 
     this.healthManagerService = new HealthManagerService(config.maxHealth);
 
@@ -49,17 +28,17 @@ class Enemy extends MoveableEntity {
   override draw() {
     this.updatePosition();
 
-    const previousFillStyle = this.canvas.canvasContext.fillStyle;
-
-    this.canvas.canvasContext.fillStyle = this.getRGBAColor();
-    this.canvas.canvasContext.fillRect(
+    this.canvas.canvasContext.drawImage(
+      this.sprite,
+      0,
+      0,
+      this.WIDTH,
+      this.HEIGHT,
       this.horizontalPosition,
       this.verticalPosition,
       this.WIDTH,
       this.HEIGHT
     );
-
-    this.canvas.canvasContext.fillStyle = previousFillStyle;
   }
 
   getNextShot(): BlasterBullet | null {
@@ -77,12 +56,6 @@ class Enemy extends MoveableEntity {
     const thirdHealth = Math.floor(
       this.healthManagerService.getMaxHealth() / 3
     );
-
-    if (this.healthManagerService.getHealth() <= halfHealth) {
-      this.currentColor = this.HALF_DAMAGE_COLOR;
-    } else if (this.healthManagerService.getHealth() <= thirdHealth) {
-      this.currentColor = this.DANGER_COLOR;
-    }
   }
 
   getPointsForDefeating(): number {
@@ -163,7 +136,13 @@ class Enemy extends MoveableEntity {
     this.nextVerticalPositonToMoveDown += this.HEIGHT;
   }
 
-  private getRGBAColor() {
-    return `rgba(${this.currentColor.red}, ${this.currentColor.green}, ${this.currentColor.blue}, ${this.currentColor.brightness})`;
+  private setSprite(width: number, height: number): HTMLImageElement {
+    const sprite = new Image();
+    sprite.src = this.spriteLocation;
+
+    this.WIDTH = width;
+    this.HEIGHT = height;
+
+    return sprite;
   }
 }

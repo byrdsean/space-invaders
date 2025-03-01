@@ -1,4 +1,3 @@
-// @ts-ignore
 class Player extends MoveableEntity {
   private readonly MAX_HEALTH = 100;
 

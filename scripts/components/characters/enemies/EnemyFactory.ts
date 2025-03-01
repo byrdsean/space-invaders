@@ -4,16 +4,25 @@ class EnemyFactory {
   private readonly weakEnemyStats: EnemyConfig = {
     maxHealth: 5,
     pointsForDefeating: 1,
+    spriteLocation: "./dist/images/weak_alien.png",
+    spriteWidth: 30,
+    spriteHeight: 30,
   };
 
   private readonly mediumEnemyStats: EnemyConfig = {
     maxHealth: 15,
     pointsForDefeating: 3,
+    spriteLocation: "./dist/images/medium_alien.png",
+    spriteWidth: 30,
+    spriteHeight: 30,
   };
 
   private readonly strongEnemyStats: EnemyConfig = {
     maxHealth: 30,
     pointsForDefeating: 6,
+    spriteLocation: "./dist/images/strong_alien.png",
+    spriteWidth: 30,
+    spriteHeight: 30,
   };
 
   private constructor() {}
