@@ -43,6 +43,12 @@ var EnemyType;
     EnemyType[EnemyType["MEDIUM"] = 1] = "MEDIUM";
     EnemyType[EnemyType["STRONG"] = 2] = "STRONG";
 })(EnemyType || (EnemyType = {}));
+var ProjectileTypes;
+(function (ProjectileTypes) {
+    ProjectileTypes[ProjectileTypes["BLASTER"] = 0] = "BLASTER";
+    ProjectileTypes[ProjectileTypes["THREE_BLASTER_PULSE"] = 1] = "THREE_BLASTER_PULSE";
+    ProjectileTypes[ProjectileTypes["LASER"] = 2] = "LASER";
+})(ProjectileTypes || (ProjectileTypes = {}));
 class MoveableEntity {
     constructor() {
         this.HEIGHT = 0;
@@ -133,18 +139,16 @@ class Player extends MoveableEntity {
         this.isShooting = false;
         this.sprite = this.setSprite();
         this.setStartingPosition();
-        this.blaster = new Blaster(this.WIDTH);
-        this.blaster.updateBlasterHorizontalPosition(this.horizontalPosition);
-        this.blaster.updateBlasterVerticalPosition(this.verticalPosition);
+        this.blaster = new Blaster(this.WIDTH, this.horizontalPosition, this.verticalPosition);
+        this.blaster.updateProjectTileType(ProjectileTypes.THREE_BLASTER_PULSE);
         this.healthManagerService = new HealthManagerService(this.MAX_HEALTH);
     }
     reset() {
         super.reset();
         this.setStartingPosition();
         this.isShooting = false;
-        this.blaster = new Blaster(this.WIDTH);
-        this.blaster.updateBlasterHorizontalPosition(this.horizontalPosition);
-        this.blaster.updateBlasterVerticalPosition(this.verticalPosition);
+        this.blaster = new Blaster(this.WIDTH, this.horizontalPosition, this.verticalPosition);
+        this.blaster.updateProjectTileType(ProjectileTypes.THREE_BLASTER_PULSE);
     }
     draw() {
         this.updateHorizontalPosition();
@@ -235,7 +239,7 @@ class Enemy extends MoveableEntity {
         this.spriteLocation = config.spriteLocation;
         this.sprite = this.setSprite(config.spriteWidth, config.spriteHeight);
         this.healthManagerService = new HealthManagerService(config.maxHealth);
-        this.blaster = new Blaster(this.verticalPosition + this.HEIGHT);
+        this.blaster = new Blaster(this.horizontalPosition + this.WIDTH, this.horizontalPosition, this.verticalPosition);
         this.blaster.shootDownwards();
     }
     draw() {
@@ -937,8 +941,7 @@ class LevelService {
     }
 }
 class Blaster {
-    constructor(ownerWidth) {
-        this.BULLET_SPEED = 2;
+    constructor(ownerWidth, ownerHorizontalPosition, ownerVerticalPosition) {
         this.MAX_COOLDOWN_PERIOD_MILLISECONDS = 500;
         this.MIN_COOLDOWN_PERIOD_MILLISECONDS = 100;
         this.CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS = 25;
@@ -948,20 +951,23 @@ class Blaster {
         this.cooldownPeriod = this.MAX_COOLDOWN_PERIOD_MILLISECONDS;
         this.isShootingDown = false;
         this.ownerWidth = ownerWidth;
+        this.updateBlasterHorizontalPosition(ownerHorizontalPosition);
+        this.updateBlasterVerticalPosition(ownerVerticalPosition);
+        this.currentProjectile = ProjectileTypes.BLASTER;
     }
     shoot() {
         const currentTime = Date.now();
         if (!this.shouldFire(currentTime))
             return null;
         this.timeLastShotFired = currentTime;
-        const bullet = new BlasterBullet(this.verticalPosition, this.horizontalPosition, this.BULLET_SPEED);
+        const bullets = ProjectileFactory.getInstance().getProjectiles(this.currentProjectile, this.verticalPosition, this.horizontalPosition);
         if (this.isShootingDown) {
-            bullet.startMovingDown();
+            bullets.forEach((bullet) => bullet.startMovingDown());
         }
         else {
-            bullet.startMovingUp();
+            bullets.forEach((bullet) => bullet.startMovingUp());
         }
-        return bullet;
+        return bullets;
     }
     increaseRateOfFire() {
         const newCoolDown = this.cooldownPeriod - this.CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS;
@@ -987,29 +993,42 @@ class Blaster {
     shootDownwards() {
         this.isShootingDown = true;
     }
+    updateProjectTileType(newProjectileType) {
+        this.currentProjectile = newProjectileType;
+        if (newProjectileType == ProjectileTypes.THREE_BLASTER_PULSE) {
+            this.setFastestRateOfFire();
+        }
+        else {
+            this.cooldownPeriod = this.MAX_COOLDOWN_PERIOD_MILLISECONDS;
+        }
+    }
     shouldFire(currentTime) {
         return currentTime - this.timeLastShotFired >= this.cooldownPeriod;
     }
+    setFastestRateOfFire() {
+        this.cooldownPeriod = this.MIN_COOLDOWN_PERIOD_MILLISECONDS;
+    }
 }
 class BlasterBullet extends MoveableEntity {
-    constructor(verticalPosition, horizontalPosition, bulletSpeed) {
+    constructor(verticalPosition, horizontalPosition) {
         super();
-        this.COLOR = "red";
-        this.BULLET_HEIGHT = 5;
-        this.BULLET_WIDTH = 5;
-        this.HEIGHT = this.BULLET_HEIGHT;
-        this.WIDTH = this.BULLET_WIDTH;
+        this.BLASTER_BULLET_HEIGHT = 5;
+        this.BLASTER_BULLET_WIDTH = 5;
+        this.color = "red";
+        this.bulletSpeed = 2;
+        this.damage = 5;
+        this.HEIGHT = this.BLASTER_BULLET_HEIGHT;
+        this.WIDTH = this.BLASTER_BULLET_WIDTH;
         this.verticalPosition = verticalPosition;
         this.horizontalPosition = horizontalPosition;
-        this.bulletSpeed = bulletSpeed;
     }
     getDamageAmount() {
-        return BlasterBullet.DAMAGE;
+        return this.damage;
     }
     draw() {
         this.updatePosition();
         const previousFillStyle = this.canvas.canvasContext.fillStyle;
-        this.canvas.canvasContext.fillStyle = this.COLOR;
+        this.canvas.canvasContext.fillStyle = this.color;
         this.canvas.canvasContext.fillRect(this.horizontalPosition, this.verticalPosition, this.WIDTH, this.HEIGHT);
         this.canvas.canvasContext.fillStyle = previousFillStyle;
     }
@@ -1027,7 +1046,57 @@ class BlasterBullet extends MoveableEntity {
         }
     }
 }
-BlasterBullet.DAMAGE = 5;
+class LaserProjectile extends BlasterBullet {
+    constructor(verticalPosition, horizontalPosition) {
+        super(verticalPosition, horizontalPosition);
+        this.LASER_WIDTH = 2;
+        this.LASER_HEIGHT = 20;
+        this.LASER_SPEED = 5;
+        this.LASER_DAMAGE = 10;
+        this.color = "yellow";
+        this.HEIGHT = this.LASER_HEIGHT;
+        this.WIDTH = this.LASER_WIDTH;
+        this.damage = this.LASER_DAMAGE;
+        this.bulletSpeed = this.LASER_SPEED;
+    }
+}
+class ProjectileFactory {
+    constructor() {
+        this.THREE_BLASTER_PULSE_GAP = 10;
+    }
+    static getInstance() {
+        if (this.instance)
+            return this.instance;
+        this.instance = new ProjectileFactory();
+        return this.instance;
+    }
+    getProjectiles(projectileType, verticalPosition, horizontalPosition) {
+        switch (projectileType) {
+            case ProjectileTypes.LASER:
+                return [new LaserProjectile(verticalPosition, horizontalPosition)];
+            case ProjectileTypes.THREE_BLASTER_PULSE:
+                return this.buildThreeBlasterPulseBullets(verticalPosition, horizontalPosition);
+            default:
+                return [new BlasterBullet(verticalPosition, horizontalPosition)];
+        }
+    }
+    buildThreeBlasterPulseBullets(verticalPosition, horizontalPosition) {
+        const leftBullet = new PulseBullet(verticalPosition, horizontalPosition - this.THREE_BLASTER_PULSE_GAP);
+        const middleBullet = new PulseBullet(verticalPosition, horizontalPosition);
+        const rightBullet = new PulseBullet(verticalPosition, horizontalPosition + this.THREE_BLASTER_PULSE_GAP);
+        return [leftBullet, middleBullet, rightBullet];
+    }
+}
+class PulseBullet extends BlasterBullet {
+    constructor(verticalPosition, horizontalPosition) {
+        super(verticalPosition, horizontalPosition);
+        this.PULSE_SPEED = 7.5;
+        this.PULSE_DAMAGE = 2;
+        this.color = "white";
+        this.bulletSpeed = this.PULSE_SPEED;
+        this.damage = this.PULSE_DAMAGE;
+    }
+}
 class SpaceInvaders {
     constructor() {
         this.FPS = 60;
@@ -1096,10 +1165,10 @@ class SpaceInvaders {
             return;
         this.enemyGroup.addEnemies(enemiesForNextLevel);
     }
-    addNextShot(nextShot, bullets) {
-        if (!nextShot)
+    addNextShot(nextShots, bullets) {
+        if (!nextShots)
             return;
-        bullets.push(nextShot);
+        nextShots.forEach((nextShot) => bullets.push(nextShot));
     }
     shouldRenderFrame(timestamp) {
         const deltaTimeMilliseconds = Math.floor(timestamp - this.lastTimestamp);

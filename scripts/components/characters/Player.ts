@@ -21,9 +21,12 @@ class Player extends MoveableEntity {
 
     this.setStartingPosition();
 
-    this.blaster = new Blaster(this.WIDTH);
-    this.blaster.updateBlasterHorizontalPosition(this.horizontalPosition);
-    this.blaster.updateBlasterVerticalPosition(this.verticalPosition);
+    this.blaster = new Blaster(
+      this.WIDTH,
+      this.horizontalPosition,
+      this.verticalPosition
+    );
+    this.blaster.updateProjectTileType(ProjectileTypes.THREE_BLASTER_PULSE);
 
     this.healthManagerService = new HealthManagerService(this.MAX_HEALTH);
   }
@@ -35,9 +38,12 @@ class Player extends MoveableEntity {
 
     this.isShooting = false;
 
-    this.blaster = new Blaster(this.WIDTH);
-    this.blaster.updateBlasterHorizontalPosition(this.horizontalPosition);
-    this.blaster.updateBlasterVerticalPosition(this.verticalPosition);
+    this.blaster = new Blaster(
+      this.WIDTH,
+      this.horizontalPosition,
+      this.verticalPosition
+    );
+    this.blaster.updateProjectTileType(ProjectileTypes.THREE_BLASTER_PULSE);
   }
 
   override draw() {
@@ -57,7 +63,7 @@ class Player extends MoveableEntity {
     );
   }
 
-  getNextShot(): BlasterBullet | null {
+  getNextShot(): BlasterBullet[] | null {
     return this.isShooting ? this.blaster.shoot() : null;
   }
 
