@@ -21,7 +21,11 @@ class Enemy extends MoveableEntity {
 
     this.healthManagerService = new HealthManagerService(config.maxHealth);
 
-    this.blaster = new Blaster(this.verticalPosition + this.HEIGHT);
+    this.blaster = new Blaster(
+      this.horizontalPosition + this.WIDTH,
+      this.horizontalPosition,
+      this.verticalPosition
+    );
     this.blaster.shootDownwards();
   }
 
@@ -41,7 +45,7 @@ class Enemy extends MoveableEntity {
     );
   }
 
-  getNextShot(): BlasterBullet | null {
+  getNextShot(): BlasterBullet[] | null {
     return this.blaster.shoot();
   }
 

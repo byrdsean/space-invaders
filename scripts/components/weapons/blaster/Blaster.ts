@@ -1,5 +1,4 @@
 class Blaster {
-  private readonly BULLET_SPEED = 2;
   private readonly MAX_COOLDOWN_PERIOD_MILLISECONDS = 500;
   private readonly MIN_COOLDOWN_PERIOD_MILLISECONDS = 100;
   private readonly CHANGE_COOLDOWN_PERIOD_STEP_MILLISECONDS = 25;
@@ -11,30 +10,38 @@ class Blaster {
   private timeLastShotFired = 0;
   private cooldownPeriod = this.MAX_COOLDOWN_PERIOD_MILLISECONDS;
   private isShootingDown = false;
+  private currentProjectile: ProjectileTypes;
 
-  constructor(ownerWidth: number) {
+  constructor(
+    ownerWidth: number,
+    ownerHorizontalPosition: number,
+    ownerVerticalPosition: number
+  ) {
     this.ownerWidth = ownerWidth;
+    this.updateBlasterHorizontalPosition(ownerHorizontalPosition);
+    this.updateBlasterVerticalPosition(ownerVerticalPosition);
+    this.currentProjectile = ProjectileTypes.BLASTER;
   }
 
-  shoot(): BlasterBullet | null {
+  shoot(): BlasterBullet[] | null {
     const currentTime = Date.now();
     if (!this.shouldFire(currentTime)) return null;
 
     this.timeLastShotFired = currentTime;
 
-    const bullet = new BlasterBullet(
+    const bullets = ProjectileFactory.getInstance().getProjectiles(
+      this.currentProjectile,
       this.verticalPosition,
-      this.horizontalPosition,
-      this.BULLET_SPEED
+      this.horizontalPosition
     );
 
     if (this.isShootingDown) {
-      bullet.startMovingDown();
+      bullets.forEach((bullet) => bullet.startMovingDown());
     } else {
-      bullet.startMovingUp();
+      bullets.forEach((bullet) => bullet.startMovingUp());
     }
 
-    return bullet;
+    return bullets;
   }
 
   increaseRateOfFire() {
@@ -70,7 +77,21 @@ class Blaster {
     this.isShootingDown = true;
   }
 
+  updateProjectTileType(newProjectileType: ProjectileTypes) {
+    this.currentProjectile = newProjectileType;
+
+    if (newProjectileType == ProjectileTypes.THREE_BLASTER_PULSE) {
+      this.setFastestRateOfFire();
+    } else {
+      this.cooldownPeriod = this.MAX_COOLDOWN_PERIOD_MILLISECONDS;
+    }
+  }
+
   private shouldFire(currentTime: number): boolean {
     return currentTime - this.timeLastShotFired >= this.cooldownPeriod;
+  }
+
+  private setFastestRateOfFire() {
+    this.cooldownPeriod = this.MIN_COOLDOWN_PERIOD_MILLISECONDS;
   }
 }

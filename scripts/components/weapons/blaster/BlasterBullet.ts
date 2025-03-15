@@ -1,29 +1,23 @@
 class BlasterBullet extends MoveableEntity {
-  private static DAMAGE = 5;
-  private readonly COLOR = "red";
+  private readonly BLASTER_BULLET_HEIGHT = 5;
+  private readonly BLASTER_BULLET_WIDTH = 5;
 
-  private readonly BULLET_HEIGHT = 5;
-  private readonly BULLET_WIDTH = 5;
+  protected color = "red";
+  protected bulletSpeed = 2;
+  protected damage: number = 5;
 
-  private readonly bulletSpeed: number;
-
-  constructor(
-    verticalPosition: number,
-    horizontalPosition: number,
-    bulletSpeed: number
-  ) {
+  constructor(verticalPosition: number, horizontalPosition: number) {
     super();
 
-    this.HEIGHT = this.BULLET_HEIGHT;
-    this.WIDTH = this.BULLET_WIDTH;
+    this.HEIGHT = this.BLASTER_BULLET_HEIGHT;
+    this.WIDTH = this.BLASTER_BULLET_WIDTH;
 
     this.verticalPosition = verticalPosition;
     this.horizontalPosition = horizontalPosition;
-    this.bulletSpeed = bulletSpeed;
   }
 
   getDamageAmount(): number {
-    return BlasterBullet.DAMAGE;
+    return this.damage;
   }
 
   override draw() {
@@ -31,7 +25,7 @@ class BlasterBullet extends MoveableEntity {
 
     const previousFillStyle = this.canvas.canvasContext.fillStyle;
 
-    this.canvas.canvasContext.fillStyle = this.COLOR;
+    this.canvas.canvasContext.fillStyle = this.color;
     this.canvas.canvasContext.fillRect(
       this.horizontalPosition,
       this.verticalPosition,

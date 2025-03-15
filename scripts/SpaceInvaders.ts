@@ -100,11 +100,11 @@ class SpaceInvaders {
   }
 
   private addNextShot(
-    nextShot: BlasterBullet | null,
+    nextShots: BlasterBullet[] | null,
     bullets: BlasterBullet[]
   ) {
-    if (!nextShot) return;
-    bullets.push(nextShot);
+    if (!nextShots) return;
+    nextShots.forEach((nextShot) => bullets.push(nextShot));
   }
 
   private shouldRenderFrame(timestamp: number): boolean {
