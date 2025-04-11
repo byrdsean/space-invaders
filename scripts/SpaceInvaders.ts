@@ -12,7 +12,6 @@ class SpaceInvaders {
   private readonly gameSplashScreen: DrawGameSplashScreen;
   private readonly gameOverSplashScreen: GameOverSplashScreen;
 
-  private readonly renderMaximumMilliseconds: number;
   private readonly renderMinimumMilliseconds: number;
 
   private lastTimestamp = 0;
@@ -23,7 +22,6 @@ class SpaceInvaders {
 
   constructor() {
     const millisecondsPerFrame = 1000 / this.FPS;
-    this.renderMaximumMilliseconds = Math.floor(millisecondsPerFrame) + 1;
     this.renderMinimumMilliseconds = Math.floor(millisecondsPerFrame) - 1;
 
     this.canvas = CanvasInstance.getInstance();
@@ -108,14 +106,25 @@ class SpaceInvaders {
   }
 
   private shouldRenderFrame(timestamp: number): boolean {
+    if (timestamp === 0) return false;
+
+    if (this.lastTimestamp === 0) {
+      this.lastTimestamp = timestamp;
+      return false;
+    }
+
     const deltaTimeMilliseconds: number = Math.floor(
       timestamp - this.lastTimestamp
     );
-    this.lastTimestamp = timestamp;
-    return (
-      this.renderMinimumMilliseconds <= deltaTimeMilliseconds &&
-      deltaTimeMilliseconds <= this.renderMaximumMilliseconds
-    );
+
+    const shouldRender =
+      this.renderMinimumMilliseconds <= deltaTimeMilliseconds;
+
+    if (shouldRender) {
+      this.lastTimestamp = timestamp;
+    }
+
+    return shouldRender;
   }
 
   private showAndRemoveBullets(bullets: BlasterBullet[]) {
