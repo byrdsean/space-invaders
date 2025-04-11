@@ -1106,7 +1106,6 @@ class SpaceInvaders {
         this.enemyBulletArray = [];
         this.gameStarted = false;
         const millisecondsPerFrame = 1000 / this.FPS;
-        this.renderMaximumMilliseconds = Math.floor(millisecondsPerFrame) + 1;
         this.renderMinimumMilliseconds = Math.floor(millisecondsPerFrame) - 1;
         this.canvas = CanvasInstance.getInstance();
         this.player = new Player();
@@ -1171,10 +1170,18 @@ class SpaceInvaders {
         nextShots.forEach((nextShot) => bullets.push(nextShot));
     }
     shouldRenderFrame(timestamp) {
+        if (timestamp === 0)
+            return false;
+        if (this.lastTimestamp === 0) {
+            this.lastTimestamp = timestamp;
+            return false;
+        }
         const deltaTimeMilliseconds = Math.floor(timestamp - this.lastTimestamp);
-        this.lastTimestamp = timestamp;
-        return (this.renderMinimumMilliseconds <= deltaTimeMilliseconds &&
-            deltaTimeMilliseconds <= this.renderMaximumMilliseconds);
+        const shouldRender = this.renderMinimumMilliseconds <= deltaTimeMilliseconds;
+        if (shouldRender) {
+            this.lastTimestamp = timestamp;
+        }
+        return shouldRender;
     }
     showAndRemoveBullets(bullets) {
         [...bullets].forEach((bullet, index) => {
